@@ -6,6 +6,7 @@ local gk = nil
 function erlua:SetGlobalKey(ngk)
 	gk = ngk
 	print("[ERLua] | Set global key to " .. gk)
+	return erlua
 end
 
 local function split(str, delim)
