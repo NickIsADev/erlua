@@ -8,8 +8,7 @@
     homepage = "https://github.com/NickIsADev/erlua",
     dependencies = {},
     files = {
-      "**.lua",
-      "!test*"
+      "*.lua"
     }
   }
   
