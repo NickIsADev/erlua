@@ -1,6 +1,12 @@
 local erlua = {}
 local http = require("coro-http")
 local json = require("json")
+local gk = nil
+
+function erlua:SetGlobalKey(ngk)
+	gk = ngk
+	print("[ERLua] | Set global key to " .. gk)
+end
 
 local function split(str, delim)
 	local ret = {}
@@ -67,6 +73,7 @@ local function err(str)
 end
 
 function erlua.Server(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -78,6 +85,7 @@ function erlua.Server(apikey, globalkey)
 end
 
 function erlua.Players(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return {code = 789, message = "No API Key"}, err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -101,6 +109,7 @@ function erlua.Players(apikey, globalkey)
 end
 
 function erlua.Vehicles(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -112,6 +121,7 @@ function erlua.Vehicles(apikey, globalkey)
 end
 
 function erlua.PlayerLogs(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -123,6 +133,7 @@ function erlua.PlayerLogs(apikey, globalkey)
 end
 
 function erlua.KillLogs(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -134,6 +145,7 @@ function erlua.KillLogs(apikey, globalkey)
 end
 
 function erlua.CommandLogs(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -145,6 +157,7 @@ function erlua.CommandLogs(apikey, globalkey)
 end
 
 function erlua.Bans(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -156,6 +169,7 @@ function erlua.Bans(apikey, globalkey)
 end
 
 function erlua.ModCalls(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -167,6 +181,7 @@ function erlua.ModCalls(apikey, globalkey)
 end
 
 function erlua.Queue(apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     local headers = {
         {"Server-Key", apikey}
@@ -178,6 +193,7 @@ function erlua.Queue(apikey, globalkey)
 end
 
 function erlua.Staff(apikey, globalkey)
+    globalkey = globalkey or gk
     local staff = {}
     local players = erlua.Players(apikey, globalkey)
     if players.code then return players end
@@ -190,6 +206,7 @@ function erlua.Staff(apikey, globalkey)
 end
 
 function erlua.TrollUsernames(apikey, globalkey)
+    globalkey = globalkey or gk
     local trollusers = {}
     local players = erlua.Players(apikey, globalkey)
     if players.code then return players end
@@ -202,6 +219,7 @@ function erlua.TrollUsernames(apikey, globalkey)
 end
 
 function erlua.NotInDiscord(guild, apikey, globalkey)
+    globalkey = globalkey or gk
     local nid = {}
     local players = erlua.Players(apikey, globalkey)
     if players.code then return players end
@@ -220,6 +238,7 @@ function erlua.NotInDiscord(guild, apikey, globalkey)
 end
 
 function erlua.Command(command, apikey, globalkey)
+    globalkey = globalkey or gk
     if not apikey then return err("An API Key was not provided.") end
     if not command then return err("A command to run was not provided.") end
     local headers = {
