@@ -5,6 +5,9 @@
     license = "MIT",
     files = {
       "*.lua"
+    },
+    dependencies = {
+        "creationix/coro-http",
     }
   }
   
