@@ -238,6 +238,8 @@ function erlua.TrollUsernames(apikey, globalkey)
 end
 
 function erlua.NotInDiscord(guild, apikey, globalkey)
+    if not guild then print("[ERLua] | A Guild must be provided as the first parameter to erlua.NotInDiscord().") return nil end
+    if (not guild.members) or (type(guild.members) ~= "table") then print("[ERLua] | An invalid guild was provided to erlua.NotInDiscord().") return nil end
     apikey = apikey or ak
     globalkey = globalkey or gk
     local nid = {}
