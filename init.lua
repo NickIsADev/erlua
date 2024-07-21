@@ -16,6 +16,13 @@ function erlua:SetAPIKey(nak)
 	return erlua
 end
 
+local function find(tbl, tofind)
+	for i, v in pairs(tbl) do
+		if v == tofind then return v end
+	end
+	return nil
+end
+
 local function split(str, delim)
 	local ret = {}
 	if not str then
@@ -222,6 +229,27 @@ function erlua.Staff(apikey, globalkey)
     end
     return staff
 end
+
+local validTeamNames = {"civilian", "police", "sheriff", "firefighter", "dot"}
+
+function erlua.Team(teamName, apikey, globalkey)
+    if not find(validTeamNames, teamName:lower()) then
+        err("Invalid team name: " .. teamName)
+        return nil
+    end
+    apikey = apikey or ak
+    globalkey = globalkey or gk
+    local team = {}
+    local players = erlua.Players(apikey, globalkey)
+    if players.code then return players end
+    for i, v in pairs(players) do
+        if v.Team:lower() == teamName:lower() then
+            table.insert(team, v)
+        end
+    end
+    return staff
+end
+
 
 function erlua.TrollUsernames(apikey, globalkey)
     apikey = apikey or ak
