@@ -248,7 +248,7 @@ function erlua.Team(teamName, apikey, globalkey)
             table.insert(team, v)
         end
     end
-    return staff
+    return team
 end
 
 
