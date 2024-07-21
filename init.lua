@@ -233,6 +233,7 @@ end
 local validTeamNames = {"civilian", "police", "sheriff", "firefighter", "dot"}
 
 function erlua.Team(teamName, apikey, globalkey)
+    if not teamName then err("A team name was not provided") return nil end
     if not find(validTeamNames, teamName:lower()) then
         err("Invalid team name: " .. teamName)
         return nil
