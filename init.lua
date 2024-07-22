@@ -16,14 +16,14 @@ function erlua:SetAPIKey(nak)
 	return erlua
 end
 
-function find(tbl, tofind)
+function table.find(tbl, tofind)
 	for i, v in pairs(tbl) do
 		if v == tofind then return v end
 	end
 	return nil
 end
 
-local function split(str, delim)
+function string.split(str, delim)
 	local ret = {}
 	if not str then
 		return ret
@@ -42,28 +42,6 @@ local function split(str, delim)
 		n = j + 1
 	end
 	table.insert(ret, string.sub(str, n))
-	return ret
-end
-
-function string.split(str, delim)
-	local ret = {}
-	if not str then
-		return ret
-	end
-	if not delim or delim == '' then
-		for c in string.gmatch(str, '.') do
-			table.insert(ret, c)
-		end
-		return ret
-	end
-	local n = 1
-	while true do
-		local i, j = find(str, delim, n)
-		if not i then break end
-		table.insert(ret, sub(str, n, i - 1))
-		n = j + 1
-	end
-	table.insert(ret, sub(str, n))
 	return ret
 end
 
@@ -256,7 +234,7 @@ local validTeamNames = {"civilian", "police", "sheriff", "fire", "dot", "jail"}
 
 function erlua.Team(teamName, apikey, globalkey)
     if not teamName then err("A team name was not provided") return nil end
-    if not find(validTeamNames, teamName:lower()) then
+    if not table.find(validTeamNames, teamName:lower()) then
         err("Invalid team name: " .. teamName)
         return nil
     end

@@ -1,6 +1,6 @@
 return {
     name = "NickIsADev/erlua",
-    version = "0.1.7",
+    version = "0.1.8",
     description = "A library providing dynamic ratelimiting, custom functions, and easy access to the ER:LC API.",
     license = "MIT",
     files = {
