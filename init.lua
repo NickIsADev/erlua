@@ -267,8 +267,8 @@ function erlua.TrollUsernames(apikey, globalkey)
 end
 
 function erlua.NotInDiscord(guild, apikey, globalkey)
-    if not guild then print("[ERLua] | A Guild must be provided as the first parameter to erlua.NotInDiscord().") return nil end
-    if (not guild.members) or (type(guild.members) ~= "table") then print("[ERLua] | An invalid guild was provided to erlua.NotInDiscord().") return nil end
+    if not guild then err("A Guild must be provided as the first parameter to erlua.NotInDiscord().") return nil end
+    if (not guild.members) or (type(guild.members) ~= "table") then err("An invalid guild was provided to erlua.NotInDiscord().") return nil end
     apikey = apikey or ak
     globalkey = globalkey or gk
     local nid = {}
@@ -299,7 +299,6 @@ function erlua.Command(command, apikey, globalkey)
         {"Server-Key", apikey}
     }
     local body = json.encode({command = command})
-    print(body)
     if globalkey then table.insert(headers, {"Authorization", globalkey}) end
     local res = post("server/command", headers, body)
     if res.code == 200 then
