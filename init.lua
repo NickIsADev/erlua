@@ -16,7 +16,7 @@ function erlua:SetAPIKey(nak)
 	return erlua
 end
 
-local function find(tbl, tofind)
+function find(tbl, tofind)
 	for i, v in pairs(tbl) do
 		if v == tofind then return v end
 	end
@@ -24,7 +24,6 @@ local function find(tbl, tofind)
 end
 
 local function split(str, delim)
-	local find, sub = string.find, string.sub
 	local ret = {}
 	if not str then
 		return ret
@@ -37,12 +36,12 @@ local function split(str, delim)
 	end
 	local n = 1
 	while true do
-		local i, j = find(str, delim, n)
+		local i, j = string.find(str, delim, n)
 		if not i then break end
-		table.insert(ret, sub(str, n, i - 1))
+		table.insert(ret, string.sub(str, n, i - 1))
 		n = j + 1
 	end
-	table.insert(ret, sub(str, n))
+	table.insert(ret, string.sub(str, n))
 	return ret
 end
 
