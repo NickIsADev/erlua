@@ -1,29 +1,43 @@
-local erlua = {}
+local erlua = {
+    GlobalKey = nil,
+    ServerKey = nil
+}
+
 local http = require("coro-http")
 local json = require("json")
-local gk = nil
-local ak = nil
+local timer = require("timer")
 
-function erlua:SetGlobalKey(ngk)
-	gk = ngk
-	print("[ERLua] | Set global key to " .. gk)
-	return erlua
+--[[ Utility Functions ]]--
+
+local function log(text, mode)
+    mode = mode or "info"
+
+    local date = os.date("%x @ %I:%M:%S%p", os.time())
+
+    if mode == "success" then
+        print(date .. " | \27[32m\27[1m[ERLUA]\27[0m    | " .. text)
+    elseif mode == "warning" then
+        print(date .. " | \27[33m\27[1m[ERLUA]\27[0m    | " .. text)
+    elseif mode == "error" then
+        print(date .. " | \27[31m\27[1m[ERLUA]\27[0m    | " .. text)
+    elseif mode == "info" then
+        print(date .. " | \27[35m\27[1m[ERLUA]\27[0m    | " .. text)
+    end
 end
 
-function erlua:SetAPIKey(nak)
-	ak = nak
-	print("[ERLua] | Set API key to " .. ak)
-	return erlua
+local function getHeader(headers, name)
+    if (not headers) or (type(headers) ~= "table") or (not name) or (name == "") then
+        return
+    end
+
+    for _, header in pairs(headers) do
+        if (type(header) == "table") and (header[1]:lower() == name:lower()) then
+            return header[2]
+        end
+    end
 end
 
-function table.find(tbl, tofind)
-	for i, v in pairs(tbl) do
-		if v == tofind then return v end
-	end
-	return nil
-end
-
-function string.split(str, delim)
+function split(str, delim)
 	local ret = {}
 	if not str then
 		return ret
@@ -45,273 +59,276 @@ function string.split(str, delim)
 	return ret
 end
 
-local function getBody(endpoint, headers)
+local function Error(code, message)
+    log(message, "error")
+    return {code = code, message = message}
+end
+
+-- [[ ERLua Functions ]] --
+
+function erlua:SetGlobalKey(gk)
+    erlua.GlobalKey = gk
+	log("Set global key to [HIDDEN].", "info")
+	return erlua
+end
+
+function erlua:SetServerKey(sk)
+	erlua.ServerKey = sk
+	log("Set server key to [HIDDEN].", "info")
+	return erlua
+end
+
+function erlua:request(method, endpoint, body, serverkey, globalkey)
     local url = "https://api.policeroleplay.community/v1/" .. endpoint
-    local res, body = http.request("GET", url, headers)
-    body = json.decode(body)
-    if res.code == 200 then
-        return body
+    local headers = {}
+
+    if (not serverkey) and (not erlua.ServerKey) then
+        return false, Error(400, "A server key was not provided to " .. method .. " /" .. endpoint .. ".")
     else
-        for i, v in pairs(res) do
-            if type(v) == "table" then
-                if v[1] == "Retry-After" then
-                    local start = os.time()
-                    local wait = math.floor(v[2] + 0.5)
-                    repeat until os.time() >= start + wait
-                    return getBody(endpoint, headers)
-                end
-            end
-        end
-        return nil, body
+        table.insert(headers, {"Server-Key", serverkey or erlua.ServerKey})
     end
-end
 
-local function post(endpoint, headers, body)
-    local url = "https://api.policeroleplay.community/v1/" .. endpoint
-    table.insert(headers, {"Content-Type", "application/json"})
-    local res = http.request("POST", url, headers, body)
-    for i, v in pairs(res) do
-        if type(v) == "table" then
-            if v[1] == "Retry-After" then
-                local start = os.time()
-                local wait = math.floor(v[2] + 0.5)
-                repeat until os.time() >= start + wait
-                return post(endpoint, headers, body)
-            end
+    if globalkey or erlua.GlobalKey then
+        table.insert(headers, {"Authorization", globalkey or erlua.GlobalKey})
+    end
+
+    if method == "POST" then
+        table.insert(headers, {"Content-Type", "application/json"})
+    end
+
+    if type(body) == "table" then
+        local success, encoded = pcall(json.encode, body)
+
+        if not success then
+            return false, Error(500, "Body could not be encoded.")
+        else
+            body = encoded
         end
     end
-    return res
-end
-
-local function err(str)
-    print("[ERLua] Error | " .. str)
-end
-
-function erlua.Server(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server", headers)
-    if not body then return res end
-    return body
-end
-
-function erlua.Players(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return {code = 789, message = "No API Key"}, err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server/players", headers)
-    if not body then return res end
-    local toret = {}
     
-    for i, v in pairs(body) do
-        table.insert(toret, {
-            Name = v.Player:split(":")[1],
-            ID = v.Player:split(":")[2],
-            Permission = v.Permission,
-            Callsign = v.Callsign,
-            Team = v.Team
-        })
+    local result, response = http.request(method, url, headers, body)
+
+    if type(response) == "string" then
+        local success, decoded = pcall(json.decode, response)
+
+        if not success then
+            return false, Error(500, "Response could not be decoded.")
+        else
+            response = decoded
+        end
     end
 
-    return toret
+    if result.code == 200 then
+        return true, response
+    elseif result.code == 429 then
+        local retryAfter = response.retry_after
+        
+        if retryAfter and tonumber(retryAfter) then
+            log("Request " .. method .. " on /" .. endpoint .. " was ratelimited, retrying after " .. tostring(retryAfter) .. "s.", "info")
+            timer.sleep(retryAfter * 1000)
+            return false, erlua:request(method, endpoint, body, serverkey, globalkey)
+        else
+            return false, Error(429, "Request " .. method .. " on /" .. endpoint .. " was ratelimited.")
+        end
+    elseif result.code == 404 then
+        return false, Error(404, "Endpoint /" .. endpoint .. " was not found. (" .. url .. ")")
+    elseif result.code and result.message then
+        return false, Error(result.code, result.message)
+    else
+        return false, response
+    end
 end
 
-function erlua.Vehicles(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server/vehicles", headers)
-    if not body then return res end
-    return body
+-- [[ Endpoint Functions ]] --
+
+function erlua.Server(serverKey, globalKey)
+    return erlua:request("GET", "server", nil, serverKey, globalKey)
 end
 
-function erlua.PlayerLogs(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server/joinlogs", headers)
-    if not body then return res end
-    return body
+function erlua.Players(serverKey, globalKey)
+    local players = {}
+    
+    local success, response = erlua:request("GET", "server/players", nil, serverKey, globalKey)
+
+    if not success then
+        return false, response
+    end
+    
+    for _, player in pairs(response) do
+        if player.Player then
+            table.insert(players, {
+                Name = split(player.Player, ":")[1],
+                ID = split(player.Player, ":")[2],
+                Player = player.Player,
+                Permission = player.Permission,
+                Callsign = player.Callsign,
+                Team = player.Team
+            })
+        end
+    end
+
+    return true, players
 end
 
-function erlua.KillLogs(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server/killlogs", headers)
-    if not body then return res end
-    return body
+function erlua.Vehicles(serverKey, globalKey)
+    return erlua:request("GET", "server/vehicles", nil, serverKey, globalKey)
 end
 
-function erlua.CommandLogs(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server/commandlogs", headers)
-    if not body then return res end
-    return body
+function erlua.PlayerLogs(serverKey, globalKey)
+    local success, response = erlua:request("GET", "server/joinlogs", nil, serverKey, globalKey)
+    
+    if not success then
+        return false, response
+    end
+
+    return true, table.sort(response, function(a,b)
+        if (not a.Timestamp) or (not b.Timestamp) then
+            return false
+        else
+            return a.Timestamp > b.Timestamp
+        end
+    end)
 end
 
-function erlua.Bans(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server/bans", headers)
-    if not body then return res end
-    return body
+function erlua.KillLogs(serverKey, globalKey)
+    local success, response = erlua:request("GET", "server/killlogs", nil, serverKey, globalKey)
+    
+    if not success then
+        return false, response
+    end
+
+    return true, table.sort(response, function(a,b)
+        if (not a.Timestamp) or (not b.Timestamp) then
+            return false
+        else
+            return a.Timestamp > b.Timestamp
+        end
+    end)
 end
 
-function erlua.ModCalls(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server/modcalls", headers)
-    if not body then return res end
-    return body
+function erlua.CommandLogs(serverKey, globalKey)
+    local success, response = erlua:request("GET", "server/commandlogs", nil, serverKey, globalKey)
+    
+    if not success then
+        return false, response
+    end
+
+    return true, table.sort(response, function(a,b)
+        if (not a.Timestamp) or (not b.Timestamp) then
+            return false
+        else
+            return a.Timestamp > b.Timestamp
+        end
+    end)
 end
 
-function erlua.Queue(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local body, res = getBody("server/queue", headers)
-    if not body then return res end
-    return body
+function erlua.ModCalls(serverKey, globalKey)
+    local success, response = erlua:request("GET", "server/modcalls", nil, serverKey, globalKey)
+    
+    if not success then
+        return false, response
+    end
+
+    return true, table.sort(response, function(a,b)
+        if (not a.Timestamp) or (not b.Timestamp) then
+            return false
+        else
+            return a.Timestamp > b.Timestamp
+        end
+    end)
 end
 
-function erlua.Staff(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
+function erlua.Bans(serverKey, globalKey)
+    return erlua:request("GET", "server/bans", nil, serverKey, globalKey)
+end
+
+function erlua.Queue(serverKey, globalKey)
+    return erlua:request("GET", "server/queue", nil, serverKey, globalKey)
+end
+
+-- [[ Custom Functions ]] --
+
+function erlua.Staff(serverKey, globalKey, preloadPlayers)
     local staff = {}
-    local players = erlua.Players(apikey, globalkey)
-    if players.code then return players end
-    for i, v in pairs(players) do
-        if v.Permission ~= "Normal" then
-            table.insert(staff, v)
+    
+    local success, players
+    
+    if preloadPlayers then
+        success = true
+        players = preloadPlayers
+    else
+        success, players = erlua.Players(serverKey, globalKey)
+    end
+
+    if not players then
+        return false, players
+    end
+    
+    for _, player in pairs(players) do
+        if (player.Permission) and (player.Permission ~= "Staff") then
+            table.insert(staff, player)
         end
     end
-    return staff
+
+    return true, staff
 end
 
-local validTeamNames = {"civilian", "police", "sheriff", "fire", "dot", "jail"}
+function erlua.Team(teamName, serverKey, globalKey, preloadPlayers)
+    if (not teamName) or (not table.find(teamName, {"civilian", "police", "sheriff", "fire", "dot", "jail"})) then return Error(400, "An invalid team name ('" .. tostring(teamName) .. "') was provided.") end
 
-function erlua.Team(teamName, apikey, globalkey)
-    if not teamName then err("A team name was not provided") return nil end
-    if not table.find(validTeamNames, teamName:lower()) then
-        err("Invalid team name: " .. teamName)
-        return nil
-    end
-    apikey = apikey or ak
-    globalkey = globalkey or gk
     local team = {}
-    local players = erlua.Players(apikey, globalkey)
-    if players.code then return players end
-    for i, v in pairs(players) do
-        if v.Team:lower() == teamName:lower() then
-            table.insert(team, v)
+
+    local success, players
+    
+    if preloadPlayers then
+        success = true
+        players = preloadPlayers
+    else
+        success, players = erlua.Players(serverKey, globalKey)
+    end
+
+
+    if not players then
+        return false, players
+    end
+
+    for _, player in pairs(players) do
+        if (player.Team) and (player.Team:lower() == teamName:lower()) then
+            table.insert(team, player)
         end
     end
-    return team
+
+    return true, team
 end
 
+function erlua.TrollUsernames(serverKey, globalKey, preloadPlayers)
+    local trolls = {}
+    
+    local success, players
+    
+    if preloadPlayers then
+        success = true
+        players = preloadPlayers
+    else
+        success, players = erlua.Players(serverKey, globalKey)
+    end
 
-function erlua.TrollUsernames(apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    local trollusers = {}
-    local players = erlua.Players(apikey, globalkey)
-    if players.code then return players end
-    for i, v in pairs(players) do
-        if v.Name:lower():sub(1,3) == "all" or v.Name:lower():sub(1,6) == "others" then
-            table.insert(trollusers, v)
+
+    if not players then
+        return false, players
+    end
+    
+    for _, player in pairs(players) do
+        if (player.Player) and ((player.Player:sub(1,3):lower() == "all") or (player.Player:sub(1,6):lower() == "others") or (player.Player:find("lI"))) then
+            table.insert(trolls, player)
         end
     end
-    return trollusers
+
+    return true, trolls
 end
 
-function erlua.NotInDiscord(guild, apikey, globalkey)
-    if not guild then err("A Guild must be provided as the first parameter to erlua.NotInDiscord().") return nil end
-    if (not guild.members) or (type(guild.members) ~= "table") then err("An invalid guild was provided to erlua.NotInDiscord().") return nil end
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    local nid = {}
-    local players = erlua.Players(apikey, globalkey)
-    if players.code then return players end
-    for i, v in pairs(players) do
-        if v.Permission == "Normal" then
-            local ind = false
-            for _, member in pairs(guild.members) do
-                if member.name:lower():find(v.Name:lower()) then
-                    ind = true
-                end
-            end
-            if ind == false then
-                table.insert(nid, v)
-            end
-        end
-    end
-    return nid
-end
-
-function erlua.Command(command, apikey, globalkey)
-    apikey = apikey or ak
-    globalkey = globalkey or gk
-    if not apikey then return err("An API Key was not provided.") end
-    if not command then return err("A command to run was not provided.") end
-    local headers = {
-        {"Server-Key", apikey}
-    }
-    local body = json.encode({command = command})
-    if globalkey then table.insert(headers, {"Authorization", globalkey}) end
-    local res = post("server/command", headers, body)
-    if res.code == 200 then
-        return true
-    elseif res.code == 500 then
-        return false, "An error occurred while attempting to communicate with the Roblox server. Please try again later."
-    elseif res.code == 400 then
-        return false, "Bad Request **|** This error should not appear; if it does and you are reading this, please submit a bug report."
-    elseif res.code == 403 then
-        return false, "Unauthorized **|** This error should not appear; if it does and you are reading this, please submit a bug report."
-    elseif res.code == 422 then
-        return false, "The in-game server has no players in it, and is therefore offline."
-    end
+function erlua.Command(command, serverKey, globalKey)
+    return erlua:request("POST", "server/command", {command = command}, serverKey, globalKey)
 end
 
 return erlua
