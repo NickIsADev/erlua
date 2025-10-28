@@ -5,6 +5,7 @@ local erlua = {
 	Requests = {},
 	Ratelimits = {},
 	ActiveBuckets = {},
+	RequestOrigins = {},
 	ValidTeams = {
 		civilian = true,
 		police = true,
@@ -37,6 +38,7 @@ end
 --
 
 local function log(text, mode)
+	text = text or "no text provided"
 	mode = mode or "info"
 
 	local date = os.date("%x @ %I:%M:%S%p", os.time())
@@ -91,6 +93,7 @@ local function realtime()
 end
 
 local function Error(code, message)
+	message = message or "unknown error"
 	log(message, "error")
 	return {
 		code = code,
@@ -107,6 +110,17 @@ local function safeResume(co, ...)
 		return false, result
 	end
 	return true, result
+end
+
+local function origin()
+	local debugInfo
+	for i = 1, 10 do
+		debugInfo = debug.getinfo(i, "Sl")
+		if (debugInfo) and (not debugInfo.short_src:lower():find("erlua")) and (debugInfo.what ~= "C") then
+			break
+		end
+	end
+	return (debugInfo and (debugInfo.short_src .. ":" .. debugInfo.currentline)) or nil
 end
 
 -- [[ ERLua Functions ]] --
@@ -188,6 +202,10 @@ function erlua:queue(request)
 	erlua.Requests[b] = erlua.Requests[b] or {}
 	table.insert(erlua.Requests[b], request)
 
+	if request.origin then
+		erlua.RequestOrigins[request.origin] = (erlua.RequestOrigins[request.origin] or 0) + 1
+	end
+
 	return coroutine.yield()
 end
 
@@ -197,49 +215,55 @@ function erlua:dump()
 	local now = realtime()
 
 	for bucket, list in pairs(erlua.Requests) do
-		if not erlua.ActiveBuckets[bucket] then
+		if bucket == "global" or not erlua.ActiveBuckets[bucket] then
 			erlua.ActiveBuckets[bucket] = true
 
 			coroutine.wrap(function()
-
-				if list[1] then
-					table.sort(list, function(a, b)
-						return a.timestamp < b.timestamp
-					end)
-
-					local state = erlua.Ratelimits[bucket]
-					local oldest = list[1]
-
-					if oldest and (not state or not state.updated or not state.retry or now >= (state.updated + state.retry)) then
-						local req = oldest
-						local ok, result, response =
-							erlua:request(req.method, req.endpoint, req.body, req.process, req.serverKey, req.globalKey)
-
-						local headers = result or {}
-						local remaining = header(headers, "X-RateLimit-Remaining")
-						local reset = header(headers, "X-RateLimit-Reset")
-
-						erlua.Ratelimits[bucket] = {
-							updated = realtime(),
-							retry = response and response.retry_after,
-							remaining = remaining and tonumber(remaining),
-							reset = reset and tonumber(reset),
-						}
-
-						if not ok and result.code == 429 then
-							log("The " .. (bucket or "unknown") .. " bucket was ratelimited, requeueing.", "warning")
-						else
-							log("Request " .. req.method .. " /" .. req.endpoint .. " fulfilled.")
-							table.remove(list, 1)
-							if #list == 0 then
-								erlua.Requests[bucket] = nil
-							end
-							safeResume(req.co, ok, response, result)
-						end
-					end
+				local req = table.remove(list, 1)
+				if not req then
+					erlua.ActiveBuckets[bucket] = nil
+					return
 				end
 
+				local ok, err = pcall(function()
+					local state = erlua.Ratelimits[bucket]
+
+					if state and state.retry and now < (state.updated + state.retry) then
+						table.insert(list, 1, req)
+						return
+					end
+
+					local ok, result, response =
+						erlua:request(req.method, req.endpoint, req.body, req.process, req.serverKey, req.globalKey)
+
+					local headers = result or {}
+					local remaining = header(headers, "X-RateLimit-Remaining")
+					local reset = header(headers, "X-RateLimit-Reset")
+
+					erlua.Ratelimits[bucket] = {
+						updated = realtime(),
+						retry = response and response.retry_after,
+						remaining = remaining and tonumber(remaining),
+						reset = reset and tonumber(reset),
+					}
+
+					if not ok and result.code == 429 then
+						log("The " .. (bucket or "unknown") .. " bucket was ratelimited, requeueing.", "warning")
+						table.insert(list, 1, req)
+					else
+						log("Request " .. req.method .. " /" .. req.endpoint .. " fulfilled.")
+						if #list == 0 then
+							erlua.Requests[bucket] = nil
+						end
+						safeResume(req.co, ok, response, result)
+					end
+				end)
+
 				erlua.ActiveBuckets[bucket] = nil
+
+				if not ok then
+					Error(500, "Error during bucket dump: " .. tostring(err))
+				end
 			end)()
 
 		end
@@ -262,6 +286,7 @@ function erlua.Server(serverKey, globalKey)
 		endpoint = "server",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin()
 	})
 end
 
@@ -271,6 +296,7 @@ function erlua.Players(serverKey, globalKey)
 		endpoint = "server/players",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin(),
 		process = function(data)
 			local players = {}
 
@@ -298,6 +324,7 @@ function erlua.Vehicles(serverKey, globalKey)
 		endpoint = "server/vehicles",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin()
 	})
 end
 
@@ -307,6 +334,7 @@ function erlua.PlayerLogs(serverKey, globalKey)
 		endpoint = "server/joinlogs",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin(),
 		process = function(data)
 			table.sort(data, function(a, b)
 				if (not a.Timestamp) or not b.Timestamp then
@@ -327,6 +355,7 @@ function erlua.KillLogs(serverKey, globalKey)
 		endpoint = "server/killlogs",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin(),
 		process = function(data)
 			table.sort(data, function(a, b)
 				if (not a.Timestamp) or not b.Timestamp then
@@ -347,6 +376,7 @@ function erlua.CommandLogs(serverKey, globalKey)
 		endpoint = "server/commandlogs",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin(),
 		process = function(data)
 			table.sort(data, function(a, b)
 				if (not a.Timestamp) or not b.Timestamp then
@@ -367,6 +397,7 @@ function erlua.ModCalls(serverKey, globalKey)
 		endpoint = "server/modcalls",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin(),
 		process = function(data)
 			table.sort(data, function(a, b)
 				if (not a.Timestamp) or not b.Timestamp then
@@ -387,6 +418,7 @@ function erlua.Bans(serverKey, globalKey)
 		endpoint = "server/bans",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin()
 	})
 end
 
@@ -396,6 +428,7 @@ function erlua.Queue(serverKey, globalKey)
 		endpoint = "server/queue",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin()
 	})
 end
 
@@ -405,6 +438,7 @@ function erlua.Permissions(serverKey, globalKey)
 		endpoint = "server/staff",
 		serverKey = serverKey,
 		globalKey = globalKey,
+		origin = origin()
 	})
 end
 
