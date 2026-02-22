@@ -12,8 +12,9 @@ timer.setInterval(5000, function()
     coroutine.wrap(function()
         local server, err = ERLC:getServer(key)
         if server then
-            for _, player in pairs(server.players) do
-                p(player.team, player.name, player.id)
+            print("VEHICLES:")
+            for _, vehicle in pairs(server.vehicles) do
+                p(vehicle.name)
             end
         else
             p("ERROR", err)

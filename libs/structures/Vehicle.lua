@@ -17,8 +17,12 @@ function get.name(self)
     return self._name
 end
 
-function get.owner(self) -- TODO: Fetch the Player object from Server
-    return self._owner
+function get.owner(self) -- TODO: Cleanup this temporary solution
+    for _, p in pairs(self._server.players) do
+        if p.name == self._owner then
+            return p
+        end
+    end
 end
 
 function get.livery(self)
