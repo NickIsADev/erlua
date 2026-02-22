@@ -35,13 +35,18 @@ function Client:__init(options)
 end
 
 function Client:getServer(key)
-    local data, err = self._api:getServer(key)
-    if data then
-        local id = key:match("%-(.+)")
-	    return self._servers[id] or Server(self, key, data)
-    else
-        return nil, err
+    local id = key:match("%-(.+)")
+
+    if not self._servers[id] then
+        local data, err = self._api:getServer(key)
+        if data then
+            self._servers[id] = Server(self, key, data)
+        else
+            return nil, err
+        end
     end
+
+    return self._servers[id]
 end
 
 function Client:getServerPlayers(key)
