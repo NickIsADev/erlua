@@ -150,7 +150,7 @@ function API:commit(method, url, headers, payload, retries)
 end
 
 function API:getServer(key)
-	local endpoint = string.format(endpoints.SERVER) .. ((self._api_version > 1 and "?Players=true&Staff=true&Joinlogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true") or "")
+	local endpoint = string.format(endpoints.SERVER) .. ((self._api_version > 1 and "?Players=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true") or "")
 	return self:request("GET", endpoint, nil, key)
 end
 
