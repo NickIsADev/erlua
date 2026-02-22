@@ -1,6 +1,6 @@
 local Log, get = require("class")("Log")
 
-function Log:__init(data, server)
+function Log:__init(server, data)
     self._server = server
     self._timestamp = data.Timestamp
 end

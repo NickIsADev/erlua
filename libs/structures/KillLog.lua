@@ -1,8 +1,8 @@
 local Log = require("structures/abstract/Log")
 local KillLog, get = require("class")("KillLog", nil, Log)
 
-function KillLog:__init(data, server)
-    Log.__init(self, data, server)
+function KillLog:__init(server, data)
+    Log.__init(self, server, data)
     
     local killerName, killerID = data.Killer and data.Killer:match("(.+):(%d+)")
     self._killer_name = killerName

@@ -12,11 +12,11 @@ end
 
 local Server, get = require("class")("Server")
 
-function Server:__init(client, serverKey, data, ttl)
+function Server:__init(client, serverKey, data)
     self._client = client
     self._server_key = serverKey
     self._id = serverKey:match("%-(.+)")
-    self._ttl = ttl or 15
+    self._ttl = client._options.ttl
     self:_load(data)
 end
 

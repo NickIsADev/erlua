@@ -3,7 +3,7 @@ local secrets = require("secrets")
 local timer = require("timer")
 local Location = erlua.Location
 local ERLC = erlua.Client({
-    apiVersion = 1
+    apiVersion = 2
 })
 
 local key = secrets.key
@@ -11,9 +11,8 @@ local key = secrets.key
 local function test()
     local server, err = ERLC:getServer(key)
     if server then
-        print("VEHICLES:")
-        for _, vehicle in pairs(server.vehicles) do
-            p(vehicle.make, vehicle.model, vehicle.year, vehicle.owner.name, vehicle.owner.id)
+        for _, player in pairs(server.players) do
+            print(player.name, tostring(player.location))
         end
     else
         p("ERROR", err)
@@ -22,6 +21,6 @@ end
 
 test()
 
-timer.setInterval(5000, function()
+timer.setInterval(1000, function()
     coroutine.wrap(test)()
 end)

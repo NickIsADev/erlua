@@ -12,7 +12,8 @@ local defaultOptions = {
     globalKey = nil,
     logLevel = enums.logLevel.info,
     dateTime = "%F %T",
-    apiVersion = 2
+    apiVersion = 2,
+    ttl = 5
 }
 
 function Client:__init(options)

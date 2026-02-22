@@ -101,6 +101,8 @@ function API:commit(method, url, headers, payload, retries)
 	local remaining = tonumber(result["x-ratelimit-remaining"])
 	local reset = tonumber(result["x-ratelimit-reset"])
 
+	p(bucket, remaining, reset)
+
 	if remaining == 0 and reset then
 		local wait = math.max(((reset - os.time()) + 1) * 1000, 0)
 		if bucket and bucket:sub(1, 7) == "command" then

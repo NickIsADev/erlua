@@ -1,8 +1,8 @@
 local Log = require("structures/abstract/Log")
 local JoinLog, get = require("class")("JoinLog", nil, Log)
 
-function JoinLog:__init(data, server)
-    Log.__init(self, data, server)
+function JoinLog:__init(server, data)
+    Log.__init(self, server, data)
     
     local name, id = data.Player:match("(.+):(%d+)")
     self._player_name = name
