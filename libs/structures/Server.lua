@@ -43,8 +43,12 @@ function Server:_load(data)
 end
 
 function Server:refresh()
-    local data = self._client:getServer(self._server_key)
-    self:_load(data)
+    local data, err = self._client._api:getServer(self._server_key)
+    if data then
+        return self:_load(data)
+    else
+        return false, err
+    end
 end
 
 function get.name(self)

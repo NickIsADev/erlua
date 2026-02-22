@@ -6,21 +6,13 @@ local ERLC = erlua.Client({
     apiVersion = 1
 })
 
-local serverKey = secrets.key
+local key = secrets.key
 
-local server, err = ERLC:getServer(serverKey)
-if server then
-    p(server)
-
-    timer.sleep(5000)
-
-    local server, err = ERLC:getServer(serverKey)
-    p(server, err)
-
-    timer.sleep(2500)
-
-
-    p(ERLC._servers)
-else
-    p("failed", err)
-end
+timer.setInterval(5000, function()
+    local server, err = ERLC:getServer(key)
+    if server then
+        p(server)
+    else
+        p("ERROR", err)
+    end
+end)
