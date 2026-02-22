@@ -9,10 +9,11 @@ end
 
 local Server, get = require("class")("Server")
 
-function Server:__init(client, serverKey, data)
+function Server:__init(client, serverKey, data, ttl)
     self._client = client
     self._server_key = serverKey
     self._id = serverKey:match("%-(.+)")
+    self._ttl = ttl or 15
     self:_load(data)
 end
 
@@ -30,7 +31,7 @@ function Server:_load(data)
 
     if data.Players then
         for _, p in pairs(data.Players) do
-            table.insert(self._players, Player(p))
+            table.insert(self._players, Player(self, p))
         end
     end
 
@@ -89,7 +90,7 @@ function get.maxPlayercount(self)
 end
 
 function get.players(self)
-    if (realtime() - self._last_updated) > 30 then
+    if (realtime() - self._last_updated) > self._ttl then
         self:refresh()
     end
 
@@ -97,7 +98,7 @@ function get.players(self)
 end
 
 function get.vehicles(self)
-    if (realtime() - self._last_updated) > 30 then
+    if (realtime() - self._last_updated) > self._ttl then
         self:refresh()
     end
 

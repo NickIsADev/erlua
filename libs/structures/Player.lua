@@ -1,18 +1,14 @@
 local Location = require("structures/Location")
 local Player, get = require("class")("Player")
 
-function Player:__init(data, server)
+function Player:__init(server, data)
+    self._server = server
     self._name, self._id = data.Player:match("(.+):(%d+)")
     self._callsign = data.Callsign
     self._team = data.Team
     self._permission = data.Permission
     self._wanted_stars = data.WantedStars
     self._location = data.Location and Location(data.Location)
-
-    if server then -- perhaps structures/Server in the future :idk:
-        self._server = server
-        server.cache.players[self._id] = self    
-    end
 end
 
 function get.name(self)
