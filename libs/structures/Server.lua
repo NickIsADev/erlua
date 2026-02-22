@@ -3,6 +3,7 @@ local Player = require("structures/Player")
 local Vehicle = require("structures/Vehicle")
 local KillLog = require("structures/KillLog")
 local JoinLog = require("structures/JoinLog")
+local CommandLog = require("structures/CommandLog")
 
 local function realtime()
     local seconds, microseconds = uv.gettimeofday()
@@ -37,12 +38,14 @@ function Server:_load(data)
     self._kill_logs = setmetatable({}, { __mode = "v" })
     self._join_logs = setmetatable({}, { __mode = "v" })
     self._command_logs = setmetatable({}, { __mode = "v" })
+    self._queue = setmetatable({}, { __mode = "v" })
 
     data.Players = data.Players or self._client._api:getServerPlayers(self._server_key) -- temporary solution until api v2 is accessible
     data.Vehicles = data.Vehicles or self._client._api:getServerVehicles(self._server_key) -- temporary solution until api v2 is accessible
     data.KillLogs = data.KillLogs or self._client._api:getServerKillLogs(self._server_key) -- temporary solution until api v2 is accessible
     data.JoinLogs = data.JoinLogs or self._client._api:getServerJoinLogs(self._server_key) -- temporary solution until api v2 is accessible
     data.CommandLogs = data.CommandLogs or self._client._api:getServerCommandLogs(self._server_key) -- temporary solution until api v2 is accessible
+    data.Queue = data.Queue or self._client._api:getServerQueue(self._server_key) -- temporary solution until api v2 is accessible
 
     if data.Players then
         for _, p in pairs(data.Players) do
@@ -72,6 +75,10 @@ function Server:_load(data)
         for _, v in pairs(data.CommandLogs) do
             table.insert(self._command_logs, CommandLog(self, v))
         end
+    end
+
+    if data.Queue then
+        self._queue = data.Queue
     end
 
     self._last_updated = realtime()
@@ -141,6 +148,14 @@ function get.vehicles(self)
     end
 
     return self._vehicles
+end
+
+function get.queue(self)
+    if (realtime() - self._last_updated) > self._ttl then
+        self:refresh()
+    end
+
+    return self._queue
 end
 
 function get.killLogs(self)
