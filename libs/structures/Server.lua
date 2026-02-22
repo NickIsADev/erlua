@@ -36,6 +36,7 @@ function Server:_load(data)
 
     data.Players = data.Players or self._client._api:getServerPlayers(self._server_key) -- temporary solution until api v2 is accessible
     data.Vehicles = data.Vehicles or self._client._api:getServerVehicles(self._server_key) -- temporary solution until api v2 is accessible
+    data.KillLogs = data.KillLogs or self._client._api:getServerKillLogs(self._server_key) -- temporary solution until api v2 is accessible
 
     if data.Players then
         for _, p in pairs(data.Players) do
