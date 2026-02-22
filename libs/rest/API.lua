@@ -25,7 +25,8 @@ local API = require("class")("API")
 
 function API:__init(client, apiVersion)
     self._client = client
-	self._base_url = "https://api.policeroleplay.community/v" .. (apiVersion or 2)
+	self._api_version = apiVersion or 2
+	self._base_url = "https://api.policeroleplay.community/v" .. self._api_version
     self._global = Mutex()
     self._buckets = setmetatable({}, {
 		__mode = "v",
@@ -149,7 +150,7 @@ function API:commit(method, url, headers, payload, retries)
 end
 
 function API:getServer(key)
-	local endpoint = string.format(endpoints.SERVER)
+	local endpoint = string.format(endpoints.SERVER) .. ((self._api_version > 1 and "?Players=true&Staff=true&Joinlogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true") or "")
 	return self:request("GET", endpoint, nil, key)
 end
 
