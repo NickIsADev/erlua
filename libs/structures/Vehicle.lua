@@ -1,0 +1,36 @@
+local Vehicle, get = require("class")("Vehicle")
+
+function Vehicle:__init(server, data)
+    self._server = server
+    self._name = data.Name
+    self._owner = data.Owner
+    self._texture = data.Texture
+    self._color_hex = data.ColorHex
+    self._color_name = data.ColorName
+end
+
+function get.server(self)
+    return self._server
+end
+
+function get.name(self)
+    return self._name
+end
+
+function get.owner(self) -- TODO: Fetch the Player object from Server
+    return self._owner
+end
+
+function get.livery(self)
+    return self._texture
+end
+
+function get.color(self)
+    return self._colox_name
+end
+
+function get.colorHex(self)
+    return self._color_hex
+end
+
+return Vehicle

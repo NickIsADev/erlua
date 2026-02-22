@@ -1,6 +1,6 @@
 local uv = require("uv")
 local Player = require("structures/Player")
--- local Vehicle = require("structures/Vehicle")
+local Vehicle = require("structures/Vehicle")
 
 local function realtime()
     local seconds, microseconds = uv.gettimeofday()
@@ -29,6 +29,9 @@ function Server:_load(data)
     self._players = setmetatable({}, { __mode = "v" })
     self._vehicles = setmetatable({}, { __mode = "v" })
 
+    data.Players = data.Players or self._client._api:getServerPlayers(self._server_key) -- temporary solution until api v2 is accessible
+    data.Vehicles = data.Vehicles or self._client._api:getServerVehicles(self._server_key) -- temporary solution until api v2 is accessible
+
     if data.Players then
         for _, p in pairs(data.Players) do
             table.insert(self._players, Player(self, p))
@@ -37,7 +40,7 @@ function Server:_load(data)
 
     if data.Vehicles then
         for _, v in pairs(data.Vehicles) do
-            table.insert(self._vehicles, Vehicle(v))
+            table.insert(self._vehicles, Vehicle(self, v))
         end
     end
 

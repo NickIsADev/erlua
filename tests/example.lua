@@ -12,7 +12,9 @@ timer.setInterval(5000, function()
     coroutine.wrap(function()
         local server, err = ERLC:getServer(key)
         if server then
-            p(server.players)
+            for _, player in pairs(server.players) do
+                p(player.team, player.name, player.id)
+            end
         else
             p("ERROR", err)
         end
