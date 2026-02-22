@@ -2,6 +2,7 @@ local uv = require("uv")
 local Player = require("structures/Player")
 local Vehicle = require("structures/Vehicle")
 local KillLog = require("structures/KillLog")
+local JoinLog = require("structures/JoinLog")
 
 local function realtime()
     local seconds, microseconds = uv.gettimeofday()
@@ -33,10 +34,13 @@ function Server:_load(data)
     self._max_players = data.MaxPlayers
     self._players = setmetatable({}, { __mode = "v" })
     self._vehicles = setmetatable({}, { __mode = "v" })
+    self._kill_logs = setmetatable({}, { __mode = "v" })
+    self._join_logs = setmetatable({}, { __mode = "v" })
 
     data.Players = data.Players or self._client._api:getServerPlayers(self._server_key) -- temporary solution until api v2 is accessible
     data.Vehicles = data.Vehicles or self._client._api:getServerVehicles(self._server_key) -- temporary solution until api v2 is accessible
     data.KillLogs = data.KillLogs or self._client._api:getServerKillLogs(self._server_key) -- temporary solution until api v2 is accessible
+    data.JoinLogs = data.JoinLogs or self._client._api:getServerJoinLogs(self._server_key) -- temporary solution until api v2 is accessible
 
     if data.Players then
         for _, p in pairs(data.Players) do
@@ -53,6 +57,12 @@ function Server:_load(data)
     if data.KillLogs then
         for _, v in pairs(data.KillLogs) do
             table.insert(self._kill_logs, KillLog(self, v))
+        end
+    end
+
+    if data.JoinLogs then
+        for _, v in pairs(data.JoinLogs) do
+            table.insert(self._join_logs, JoinLog(self, v))
         end
     end
 
