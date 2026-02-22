@@ -1,8 +1,9 @@
 local Region = require("class")("Region")
 
 function Region:__init(corners)
-    self._min_x, self._max_x = -math.huge, math.huge
-    self._min_z, self._max_z = -math.huge, math.huge
+    assert(corners and #corners == 4, "exactly 4 Locations must be provided when creating a Region")
+    self._min_x, self._max_x = 0, 0
+    self._min_z, self._max_z = 0, 0
 
     for _, corner in pairs(corners) do
         if corner._x < self._min_x then

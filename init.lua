@@ -1,6 +1,6 @@
 return {
-	API = require("rest/API"),
 	Client = require("client/Client"),
-	Player = require("structures/Player"),
-	Location = require("structures/Location")
+	API = require("rest/API"),
+	Location = require("structures/Location"),
+	Region = require("structures/Region")
 }
