@@ -3,7 +3,9 @@ local Player, get = require("class")("Player")
 
 function Player:__init(server, data)
     self._server = server
-    self._name, self._id = data.Player:match("(.+):(%d+)")
+    local name, id = data.Player:match("(.+):(%d+)")
+    self._name = name
+    self._id = tonumber(id)
     self._callsign = data.Callsign
     self._team = data.Team
     self._permission = data.Permission
