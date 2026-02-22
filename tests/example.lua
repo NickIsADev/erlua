@@ -8,16 +8,20 @@ local ERLC = erlua.Client({
 
 local key = secrets.key
 
-timer.setInterval(5000, function()
-    coroutine.wrap(function()
-        local server, err = ERLC:getServer(key)
-        if server then
-            print("VEHICLES:")
-            for _, vehicle in pairs(server.vehicles) do
-                p(vehicle.name)
-            end
-        else
-            p("ERROR", err)
+local function test()
+    local server, err = ERLC:getServer(key)
+    if server then
+        print("VEHICLES:")
+        for _, vehicle in pairs(server.vehicles) do
+            p(vehicle.make, vehicle.model, vehicle.year, vehicle.owner.name, vehicle.owner.id)
         end
-    end)()
+    else
+        p("ERROR", err)
+    end
+end
+
+test()
+
+timer.setInterval(5000, function()
+    coroutine.wrap(test)()
 end)
