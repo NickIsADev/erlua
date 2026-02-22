@@ -1,6 +1,7 @@
 local uv = require("uv")
 local Player = require("structures/Player")
 local Vehicle = require("structures/Vehicle")
+local KillLog = require("structures/KillLog")
 
 local function realtime()
     local seconds, microseconds = uv.gettimeofday()
@@ -45,6 +46,12 @@ function Server:_load(data)
     if data.Vehicles then
         for _, v in pairs(data.Vehicles) do
             table.insert(self._vehicles, Vehicle(self, v))
+        end
+    end
+
+    if data.KillLogs then
+        for _, v in pairs(data.KillLogs) do
+            table.insert(self._kill_logs, KillLog(self, v))
         end
     end
 
@@ -115,6 +122,14 @@ function get.vehicles(self)
     end
 
     return self._vehicles
+end
+
+function get.kills(self)
+    if (realtime() - self._last_updated) > self._ttl then
+        self:refresh()
+    end
+
+    return self._kill_logs
 end
 
 return Server
