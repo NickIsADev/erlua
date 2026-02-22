@@ -1,18 +1,18 @@
 local Log = require("structures/abstract/Log")
-local JoinLog, get = require("class")("JoinLog", nil, Log)
+local CommandLog, get = require("class")("CommandLog", nil, Log)
 
-function JoinLog:__init(data, server)
+function CommandLog:__init(data, server)
     Log.__init(self, data, server)
     
     local name, id = data.Player:match("(.+):(%d+)")
     self._player_name = name
     self._player_id = tonumber(id)
 
-    self._join = data.Join
+    self._command = data.Command
 end
 
-function JoinLog:__tostring()
-    return string.format("JoinLog: %s (%d) %s the server", self._player_name, self._player_id, self._join and "joined" or "left")
+function CommandLog:__tostring()
+    return string.format("CommandLog: %s (%d) used %s", self._player_name, self._player_id, self._command)
 end
 
 function get.player(self) -- TODO: Cleanup this temporary solution
@@ -23,8 +23,8 @@ function get.player(self) -- TODO: Cleanup this temporary solution
     end
 end
 
-function get.type(self)
-    return self._join and "join" or "leave"
+function get.command(self)
+    return self._command
 end
 
-return JoinLog
+return CommandLog
