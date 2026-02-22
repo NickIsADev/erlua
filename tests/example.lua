@@ -9,10 +9,12 @@ local ERLC = erlua.Client({
 local key = secrets.key
 
 timer.setInterval(5000, function()
-    local server, err = ERLC:getServer(key)
-    if server then
-        p(server)
-    else
-        p("ERROR", err)
-    end
+    coroutine.wrap(function()
+        local server, err = ERLC:getServer(key)
+        if server then
+            p(server)
+        else
+            p("ERROR", err)
+        end
+    end)()
 end)
