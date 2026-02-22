@@ -3,6 +3,7 @@ local enums = require("enums")
 local API = require("rest/API")
 local Logger = require("utils/Logger")
 local Emitter = require("utils/Emitter")
+local Server = require("structures/Server")
 local Player = require("structures/Player")
 
 local Client = require("class")("Client", nil, Emitter)
@@ -26,6 +27,7 @@ function Client:__init(options)
     self._options = options
     self._api = API(self, options.apiVersion)
     self._logger = Logger(options.logLevel, options.dateTime)
+    self._servers = setmetatable({}, { __mode = "v" })
     
     if options.globalKey then
         self._api:authenticate(options.globalKey)
@@ -33,7 +35,13 @@ function Client:__init(options)
 end
 
 function Client:getServer(key)
-	return self._api:getServer(key)
+    local data, err = self._api:getServer(key)
+    if data then
+        local id = key:match("%-(.+)")
+	    return self._servers[id] or Server(self, key, data)
+    else
+        return nil, err
+    end
 end
 
 function Client:getServerPlayers(key)
