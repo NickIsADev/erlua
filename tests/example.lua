@@ -3,6 +3,7 @@ local secrets = require("secrets")
 local timer = require("timer")
 local Location = erlua.Location
 local ERLC = erlua.Client({
+    globalKey = secrets.global_key,
     apiVersion = 2
 })
 
