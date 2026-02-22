@@ -1,16 +1,16 @@
 return {
     name = "NickIsADev/erlua",
-    version = "2.0.0",
+    version = "3.0.0-dev",
     description = "A library providing dynamic ratelimiting, custom functions, and easy access to the ER:LC API.",
     license = "MIT",
     files = {
-      "*.lua"
+      "**.lua"
     },
     dependencies = {
         "creationix/coro-http",
         "luvit/json",
         "luvit/timer",
-        "luvit/secure-socket",
+        "luvit/secure-socket"
     }
 }
   
