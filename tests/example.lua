@@ -7,7 +7,7 @@ local ERLC = erlua.Client({
 
 local serverKey = secrets.key
 
-local server, err = ERLC:getServer()
+local server, err = ERLC:getServer(serverKey)
 if server then
     p(server)
 else
