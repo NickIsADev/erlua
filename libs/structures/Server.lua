@@ -48,6 +48,7 @@ function Server:_load(data)
     data.KillLogs = data.KillLogs or self._client._api:getServerKillLogs(self._server_key)
     data.CommandLogs = data.CommandLogs or self._client._api:getServerCommandLogs(self._server_key)
     data.Queue = data.Queue or self._client._api:getServerQueue(self._server_key)
+    data.Staff = data.Staff or self._client._api:getServerStaff(self._server_key)
 
     if data.Players then
         for _, p in pairs(data.Players) do
@@ -81,6 +82,10 @@ function Server:_load(data)
 
     if data.Queue then
         self._queue = data.Queue
+    end
+
+    if data.Staff then
+        self._staff = data.Staff
     end
 
     self._last_updated = realtime()
@@ -158,6 +163,14 @@ function get.queue(self)
     end
 
     return self._queue
+end
+
+function get.staff(self)
+    if (realtime() - self._last_updated) > self._ttl then
+        self:refresh()
+    end
+
+    return self._staff
 end
 
 function get.killLogs(self)
