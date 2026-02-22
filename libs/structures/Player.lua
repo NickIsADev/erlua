@@ -3,9 +3,11 @@ local Player, get = require("class")("Player")
 
 function Player:__init(server, data)
     self._server = server
+
     local name, id = data.Player:match("(.+):(%d+)")
     self._name = name
     self._id = tonumber(id)
+
     self._callsign = data.Callsign
     self._team = data.Team
     self._permission = data.Permission
@@ -15,6 +17,10 @@ end
 
 function Player:__tostring()
     return string.format("Player: %s (%d)", self._name, self._id)
+end
+
+function get.server(self)
+    return self._server
 end
 
 function get.name(self)
