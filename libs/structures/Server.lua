@@ -60,6 +60,11 @@ function Server:refresh()
     end
 end
 
+function Server:execute(command)
+	command = ":" .. command:gsub("^:", "")
+    local data, err = self._client._api:sendServerCommand(self._server_key, { command = command })
+end
+
 function get.name(self)
     return self._name
 end
