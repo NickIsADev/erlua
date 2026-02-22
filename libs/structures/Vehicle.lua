@@ -13,6 +13,10 @@ function Vehicle:__init(server, data)
     self._color_name = data.ColorName
 end
 
+function Vehicle:__tostring()
+    return self._name
+end
+
 function get.server(self)
     return self._server
 end

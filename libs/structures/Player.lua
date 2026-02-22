@@ -13,6 +13,10 @@ function Player:__init(server, data)
     self._location = data.Location and Location(data.Location)
 end
 
+function Player:__tostring()
+    return string.format("%s (%d)", self._name, self._id)
+end
+
 function get.name(self)
     return self._name
 end

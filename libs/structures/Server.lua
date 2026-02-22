@@ -17,6 +17,10 @@ function Server:__init(client, serverKey, data, ttl)
     self:_load(data)
 end
 
+function Server:__tostring()
+    return self._name
+end
+
 function Server:_load(data)
     self._name = data.Name
     self._join_key = data.JoinKey
