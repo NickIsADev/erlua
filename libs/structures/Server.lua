@@ -18,7 +18,7 @@ function Server:__init(client, serverKey, data, ttl)
 end
 
 function Server:__tostring()
-    return self._name
+    return string.format("Server: %s", self._name)
 end
 
 function Server:_load(data)

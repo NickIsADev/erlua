@@ -14,7 +14,7 @@ function Vehicle:__init(server, data)
 end
 
 function Vehicle:__tostring()
-    return self._name
+    return string.format("Vehicle: %s", self._name)
 end
 
 function get.server(self)

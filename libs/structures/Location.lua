@@ -1,6 +1,7 @@
 local Location, get = require("class")("Location")
 
-function Location:__init(data)
+function Location:__init(data, parent)
+    self._parent = parent
     self._x = data.LocationX
     self._z = data.LocationZ
     self._postal_code = data.PostalCode
@@ -18,6 +19,10 @@ function Location:distance(other)
     return math.sqrt(dx * dx + dz * dz)
 end
 
+function get.parent(self)
+    return self._parent
+end
+
 function get.x(self)
     return self._x
 end
@@ -26,15 +31,15 @@ function get.z(self)
     return self._z
 end
 
-function get.postalCode(self)
+function get.postal(self)
     return self._postal_code
 end
 
-function get.streetName(self)
+function get.street(self)
     return self._street_name
 end
 
-function get.buildingNumber(self)
+function get.building(self)
     return self._building_number
 end
 

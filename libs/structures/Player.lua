@@ -10,11 +10,11 @@ function Player:__init(server, data)
     self._team = data.Team
     self._permission = data.Permission
     self._wanted_stars = data.WantedStars
-    self._location = data.Location and Location(data.Location)
+    self._location = data.Location and Location(data.Location, self)
 end
 
 function Player:__tostring()
-    return string.format("%s (%d)", self._name, self._id)
+    return string.format("Player: %s (%d)", self._name, self._id)
 end
 
 function get.name(self)
