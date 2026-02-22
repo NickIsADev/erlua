@@ -89,7 +89,7 @@ function get.coOwners(self)
 end
 
 function get.playercount(self)
-    return self._current_players
+    return self._players and #self._players or 0
 end
 
 function get.maxPlayercount(self)
