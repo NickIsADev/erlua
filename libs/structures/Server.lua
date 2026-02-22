@@ -34,8 +34,8 @@ function Server:_load(data)
     end
 
     if data.Vehicles then
-        for _, p in pairs(data.Vehicles) do
-            table.insert(self._vehicles, Vehicle(p))
+        for _, v in pairs(data.Vehicles) do
+            table.insert(self._vehicles, Vehicle(v))
         end
     end
 
