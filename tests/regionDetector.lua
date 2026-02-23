@@ -12,9 +12,18 @@ local key = secrets.key
 local function test()
     local server, err = ERLC:getServer(key)
     if server then
-        os.execute("cls")
-        for _, vehicle in pairs(server.vehicles) do
-            print(string.format("Location({LocationX = %d, LocationZ = %d})", vehicle.owner.location.x, vehicle.owner.location.z))
+        -- os.execute("cls")
+        for _, player in pairs(server.players) do
+            local region = "None"
+
+            for _, r in pairs(erlua.regions) do
+                if r:contains(player.location) then
+                    region = r.name
+                    break
+                end
+            end
+
+            print(tostring(player), region)
         end
     else
         p("ERROR", err)
