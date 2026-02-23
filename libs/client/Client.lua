@@ -35,6 +35,13 @@ function Client:__init(options)
     end
 end
 
+for name, level in pairs(enums.logLevel) do
+	Client[name] = function(self, fmt, ...)
+		local msg = self._logger:log(level, fmt, ...)
+		return self:emit(name, msg or string.format(fmt, ...))
+	end
+end
+
 function Client:getServer(key)
     local id = key:match("%-(.+)")
 

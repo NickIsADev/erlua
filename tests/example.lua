@@ -12,7 +12,7 @@ local key = secrets.key
 local function test()
     local server, err = ERLC:getServer(key)
     if server then
-        os.execute("cls")
+        -- os.execute("cls")
         for _, vehicle in pairs(server.vehicles) do
             print(string.format("Location({LocationX = %d, LocationZ = %d})", vehicle.owner.location.x, vehicle.owner.location.z))
         end

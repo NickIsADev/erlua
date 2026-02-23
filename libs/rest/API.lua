@@ -38,6 +38,9 @@ function API:__init(client, apiVersion)
 end
 
 function API:authenticate(globalKey)
+	if self._client then
+		self._client:info("Authenticated with global key")
+	end
     self._global_key = globalKey
     return true
 end
@@ -74,7 +77,7 @@ function API:request(method, endpoint, payload, key)
         server:lock()
     end
 
-	local data, err, delay = API:commit(method, url, headers, payload, 0)
+	local data, err, delay = self:commit(method, url, headers, payload, 0)
 
     global:unlockAfter(delay.global)
     if server then
@@ -87,7 +90,13 @@ end
 function API:commit(method, url, headers, payload, retries)
 	local delay = { global = 0, server = 0 }
 
+	if self._client then
+		self._client:debug("%s %s", method, url)
+	end
 	local success, result, body = pcall(http.request, method, url, headers, payload)
+	if self._client then
+		self._client:debug("%d %s", result.code or 0, result.reason or "Unknown")
+	end
 	if not success then
 		return false, result, delay
 	end
