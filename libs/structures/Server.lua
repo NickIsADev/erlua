@@ -39,16 +39,14 @@ function Server:_load(data)
     self._join_logs = setmetatable({}, { __mode = "v" })
     self._command_logs = setmetatable({}, { __mode = "v" })
     self._queue = setmetatable({}, { __mode = "v" })
-
-    -- temporary solutions until api v2 is accessible
     
-    data.Players = data.Players or self._client._api:getServerPlayers(self._server_key)
-    data.JoinLogs = data.JoinLogs or self._client._api:getServerJoinLogs(self._server_key)
-    data.Vehicles = data.Vehicles or self._client._api:getServerVehicles(self._server_key)
-    data.KillLogs = data.KillLogs or self._client._api:getServerKillLogs(self._server_key)
-    data.CommandLogs = data.CommandLogs or self._client._api:getServerCommandLogs(self._server_key)
-    data.Queue = data.Queue or self._client._api:getServerQueue(self._server_key)
-    data.Staff = data.Staff or self._client._api:getServerStaff(self._server_key)
+    -- data.Players = data.Players or self._client._api:getServerPlayers(self._server_key)
+    -- data.JoinLogs = data.JoinLogs or self._client._api:getServerJoinLogs(self._server_key)
+    -- data.Vehicles = data.Vehicles or self._client._api:getServerVehicles(self._server_key)
+    -- data.KillLogs = data.KillLogs or self._client._api:getServerKillLogs(self._server_key)
+    -- data.CommandLogs = data.CommandLogs or self._client._api:getServerCommandLogs(self._server_key)
+    -- data.Queue = data.Queue or self._client._api:getServerQueue(self._server_key)
+    -- data.Staff = data.Staff or self._client._api:getServerStaff(self._server_key)
 
     if data.Players then
         for _, p in pairs(data.Players) do
@@ -138,7 +136,7 @@ function get.playercount(self)
 end
 
 function get.maxPlayercount(self)
-    return self.max_players
+    return self._max_players
 end
 
 function get.players(self)

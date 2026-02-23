@@ -19,6 +19,7 @@ local defaultOptions = {
 function Client:__init(options)
     Emitter.__init(self)
 
+    options = options or {}
     for k, v in pairs(defaultOptions) do
         if options[k] == nil then
             options[k] = v

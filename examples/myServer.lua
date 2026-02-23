@@ -7,7 +7,7 @@ local ERLC = erlua.Client()
 local function fetch()
     local server, err = ERLC:getServer(secrets.server_key)
     if server then
-        print(server.name, server.playercount .. "/" .. server.maxPlayercount)
+        print(string.format("Server: %s (Code: %s)\nPlayers: %d/%d\nVehicles: %d\n=======================================", server.name, server.joinCode, server.playercount, server.maxPlayercount, #server.vehicles))
     else
         return false, err
     end
@@ -15,4 +15,4 @@ end
 
 fetch()
 
-timer.setInterval(5000, fetch)
+timer.setInterval(1000, fetch)
