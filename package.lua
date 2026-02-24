@@ -1,7 +1,7 @@
 return {
     name = "NickIsADev/erlua",
-    version = "3.0.0",
-    description = "A library providing dynamic ratelimiting, custom functions, and easy access to the ER:LC API.",
+    version = "3.1.0",
+    description = "A scalable library with TTL data caching, classes, and ratelimit handling for the ERLC API v2.",
     license = "MIT",
     files = {
       "**.lua"

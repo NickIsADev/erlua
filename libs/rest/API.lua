@@ -46,10 +46,7 @@ function API:authenticate(globalKey)
 end
 
 function API:request(method, endpoint, payload, key)
-    local _, main = coroutine.running()
-    if main then
-        return false, "Request cannot be made outside of a coroutine"
-	elseif not key then
+    if not key then -- TODO: Add check for coroutine that does not return an error if via pairs()?
 		return false, "Server key was not provided"
 	end
 
