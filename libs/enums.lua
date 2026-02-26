@@ -40,4 +40,13 @@ enums.logLevel = enum {
 	debug   = 4,
 }
 
+enums.permission = enum {
+	normal		  = 0,
+	helper		  = 1,
+	moderator	  = 2,
+	administrator = 3,
+	coOwner		  = 4,
+	owner		  = 5
+}
+
 return enums
