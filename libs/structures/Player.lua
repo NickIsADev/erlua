@@ -35,6 +35,10 @@ function get.team(self)
     return self._team
 end
 
+function get.callsign(self)
+    return self._callsign
+end
+
 function get.permission(self)
     return self._permission
 end
