@@ -1,5 +1,8 @@
+local enums = require("enums")
+
 local Log = require("structures/abstract/Log")
 local OfflinePlayer = require("structures/OfflinePlayer")
+
 local JoinLog, get = require("class")("JoinLog", nil, Log)
 
 function JoinLog:__init(server, data)
@@ -9,7 +12,7 @@ function JoinLog:__init(server, data)
     self._player_name = name
     self._player_id = tonumber(id)
 
-    self._join = data.Join
+    self._join = data.Join and enums.joinLogType.join or enums.joinLogType.leave
 end
 
 function JoinLog:__tostring()
@@ -27,7 +30,7 @@ function get.player(self) -- TODO: Cleanup this temporary solution
 end
 
 function get.type(self)
-    return self._join and "join" or "leave"
+    return self._join
 end
 
 return JoinLog

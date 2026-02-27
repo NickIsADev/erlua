@@ -49,4 +49,9 @@ enums.permission = enum {
 	owner		  = 5
 }
 
+enums.joinLogType = enum {
+	leave	= 0,
+	join 	= 1
+}
+
 return enums
