@@ -1,4 +1,5 @@
 local Location = require("structures/Location")
+local OfflinePlayer = require("structures/OfflinePlayer")
 local Modcall, get = require("class")("Modcall")
 
 function Modcall:__init(server, data)
@@ -29,6 +30,8 @@ function get.caller(self) -- TODO: Cleanup this temporary solution
             return p
         end
     end
+
+    return OfflinePlayer(self._server, self._caller_name, self._caller_id)
 end
 
 function get.moderator(self) -- TODO: Cleanup this temporary solution
@@ -37,6 +40,8 @@ function get.moderator(self) -- TODO: Cleanup this temporary solution
             return p
         end
     end
+
+    return OfflinePlayer(self._server, self._moderator_name, self._moderator_id)
 end
 
 function get.timestamp(self)

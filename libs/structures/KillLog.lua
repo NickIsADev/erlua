@@ -1,4 +1,5 @@
 local Log = require("structures/abstract/Log")
+local OfflinePlayer = require("structures/OfflinePlayer")
 local KillLog, get = require("class")("KillLog", nil, Log)
 
 function KillLog:__init(server, data)
@@ -23,6 +24,8 @@ function get.killer(self) -- TODO: Cleanup this temporary solution
             return p
         end
     end
+    
+    return OfflinePlayer(self._server, self._killer_name, self._killer_id)
 end
 
 function get.killed(self) -- TODO: Cleanup this temporary solution
@@ -31,6 +34,8 @@ function get.killed(self) -- TODO: Cleanup this temporary solution
             return p
         end
     end
+
+    return OfflinePlayer(self._server, self._killed_name, self._killed_id)
 end
 
 return KillLog

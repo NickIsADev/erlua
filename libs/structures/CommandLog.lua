@@ -1,4 +1,5 @@
 local Log = require("structures/abstract/Log")
+local OfflinePlayer = require("structures/OfflinePlayer")
 local CommandLog, get = require("class")("CommandLog", nil, Log)
 
 function CommandLog:__init(server, data)
@@ -21,6 +22,8 @@ function get.player(self) -- TODO: Cleanup this temporary solution
             return p
         end
     end
+
+    return OfflinePlayer(self._server, self._player_name, self._player_id)
 end
 
 function get.command(self)
