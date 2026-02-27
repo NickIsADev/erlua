@@ -4,6 +4,7 @@ local Vehicle = require("structures/Vehicle")
 local KillLog = require("structures/KillLog")
 local JoinLog = require("structures/JoinLog")
 local CommandLog = require("structures/CommandLog")
+local Modcall = require("structures/Modcall")
 
 local function realtime()
     local seconds, microseconds = uv.gettimeofday()
@@ -38,6 +39,7 @@ function Server:_load(data)
     self._kill_logs = setmetatable({}, { __mode = "v" })
     self._join_logs = setmetatable({}, { __mode = "v" })
     self._command_logs = setmetatable({}, { __mode = "v" })
+    self._modcalls = setmetatable({}, { __mode = "v" })
     self._queue = setmetatable({}, { __mode = "v" })
     
     -- data.Players = data.Players or self._client._api:getServerPlayers(self._server_key)
@@ -45,6 +47,7 @@ function Server:_load(data)
     -- data.Vehicles = data.Vehicles or self._client._api:getServerVehicles(self._server_key)
     -- data.KillLogs = data.KillLogs or self._client._api:getServerKillLogs(self._server_key)
     -- data.CommandLogs = data.CommandLogs or self._client._api:getServerCommandLogs(self._server_key)
+    -- data.ModCalls = data.ModCalls or self._client._api:getServerModcalls(self._server_key)
     -- data.Queue = data.Queue or self._client._api:getServerQueue(self._server_key)
     -- data.Staff = data.Staff or self._client._api:getServerStaff(self._server_key)
 
@@ -75,6 +78,12 @@ function Server:_load(data)
     if data.CommandLogs then
         for _, v in pairs(data.CommandLogs) do
             table.insert(self._command_logs, CommandLog(self, v))
+        end
+    end
+
+    if data.ModCalls then
+        for _, v in pairs(data.ModCalls) do
+            table.insert(self._modcalls, Modcall(self, v))
         end
     end
 
