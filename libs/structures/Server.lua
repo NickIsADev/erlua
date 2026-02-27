@@ -64,18 +64,30 @@ function Server:_load(data)
     end
 
     if data.KillLogs then
+        table.sort(data.KillLogs, function(a, b)
+            return a.Timestamp > b.Timestamp
+        end)
+
         for _, v in pairs(data.KillLogs) do
             table.insert(self._kill_logs, KillLog(self, v))
         end
     end
 
     if data.JoinLogs then
+        table.sort(data.JoinLogs, function(a, b)
+            return a.Timestamp > b.Timestamp
+        end)
+
         for _, v in pairs(data.JoinLogs) do
             table.insert(self._join_logs, JoinLog(self, v))
         end
     end
 
     if data.CommandLogs then
+        table.sort(data.CommandLogs, function(a, b)
+            return a.Timestamp > b.Timestamp
+        end)
+        
         for _, v in pairs(data.CommandLogs) do
             table.insert(self._command_logs, CommandLog(self, v))
         end
