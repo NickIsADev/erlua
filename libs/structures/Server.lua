@@ -94,6 +94,10 @@ function Server:_load(data)
     end
 
     if data.ModCalls then
+        table.sort(data.ModCalls, function(a, b)
+            return a.Timestamp > b.Timestamp
+        end)
+
         for _, v in pairs(data.ModCalls) do
             table.insert(self._modcalls, Modcall(self, v))
         end
