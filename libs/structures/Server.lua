@@ -176,22 +176,6 @@ function get.vehicles(self)
     return self._vehicles
 end
 
-function get.queue(self)
-    if (realtime() - self._last_updated) > self._ttl then
-        self:refresh()
-    end
-
-    return self._queue
-end
-
-function get.staff(self)
-    if (realtime() - self._last_updated) > self._ttl then
-        self:refresh()
-    end
-
-    return self._staff
-end
-
 function get.killLogs(self)
     if (realtime() - self._last_updated) > self._ttl then
         self:refresh()
@@ -214,6 +198,30 @@ function get.commandLogs(self)
     end
 
     return self._command_logs
+end
+
+function get.modcalls(self)
+    if (realtime() - self._last_updated) > self._ttl then
+        self:refresh()
+    end
+
+    return self._modcalls
+end
+
+function get.queue(self)
+    if (realtime() - self._last_updated) > self._ttl then
+        self:refresh()
+    end
+
+    return self._queue
+end
+
+function get.staff(self)
+    if (realtime() - self._last_updated) > self._ttl then
+        self:refresh()
+    end
+
+    return self._staff
 end
 
 return Server
