@@ -5,11 +5,11 @@ local KillLog, get = require("class")("KillLog", nil, Log)
 function KillLog:__init(server, data)
     Log.__init(self, server, data)
     
-    local killerName, killerID = data.Killer and data.Killer:match("(.+):(%d+)")
+    local killerName, killerID = data.Killer:match("(.+):(%d+)")
     self._killer_name = killerName
     self._killer_id = killerID and tonumber(killerID)
 
-    local killedName, killedID = data.Killed and data.Killed:match("(.+):(%d+)")
+    local killedName, killedID = data.Killed:match("(.+):(%d+)")
     self._killed_name = killedName
     self._killed_id = killedID and tonumber(killedID)
 end

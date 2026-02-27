@@ -9,9 +9,11 @@ function Modcall:__init(server, data)
     self._caller_name = callerName
     self._caller_id = tonumber(callerID)
     
-    local moderatorName, moderatorID = data.Moderator and data.Moderator:match("(.+):(%d+)")
-    self._moderator_name = moderatorName
-    self._moderator_id = moderatorID and tonumber(moderatorID)
+    if data.Moderator then
+        local moderatorName, moderatorID = data.Moderator:match("(.+):(%d+)")
+        self._moderator_name = moderatorName
+        self._moderator_id = moderatorID and tonumber(moderatorID)
+    end
     
     self._timestamp = data.Timestamp
 end
@@ -35,13 +37,15 @@ function get.caller(self) -- TODO: Cleanup this temporary solution
 end
 
 function get.moderator(self) -- TODO: Cleanup this temporary solution
-    for _, p in pairs(self._server.players) do
-        if p.name == self._moderator_name then
-            return p
+    if self._moderator_name then
+        for _, p in pairs(self._server.players) do
+            if p.name == self._moderator_name then
+                return p
+            end
         end
-    end
 
-    return OfflinePlayer(self._server, self._moderator_name, self._moderator_id)
+        return OfflinePlayer(self._server, self._moderator_name, self._moderator_id)
+    end
 end
 
 function get.timestamp(self)
