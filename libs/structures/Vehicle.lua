@@ -61,7 +61,7 @@ function get.livery(self)
 end
 
 function get.color(self)
-    return self._colox_name
+    return self._color_name
 end
 
 function get.colorHex(self)
