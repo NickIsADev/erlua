@@ -47,6 +47,12 @@ function get.owner(self) -- TODO: Cleanup this temporary solution
         end
     end
 
+    for _, l in pairs(self._server.joinLogs) do
+        if l.player.name == self._owner then
+            return l.player
+        end
+    end
+
     return OfflinePlayer(self._server, self._owner)
 end
 
