@@ -5,7 +5,7 @@ local OfflinePlayer, get = require("class")("OfflinePlayer")
 function OfflinePlayer:__init(server, name, id)
     self._server = server
     self._name = name
-    self._id = tonumber(id) or 0
+    self._id = tonumber(id)
 end
 
 function OfflinePlayer:__tostring()

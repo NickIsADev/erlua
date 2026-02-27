@@ -6,8 +6,8 @@ function CommandLog:__init(server, data)
     Log.__init(self, server, data)
     
     local name, id = data.Player:match("(.+):(%d+)")
-    self._player_name = name
-    self._player_id = tonumber(id)
+    self._player_name = name or data.Player
+    self._player_id = tonumber(id) or 0
 
     self._command = data.Command
 end
