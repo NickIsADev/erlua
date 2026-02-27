@@ -1,3 +1,4 @@
+local OfflinePlayer = require("structures/OfflinePlayer")
 local Vehicle, get = require("class")("Vehicle")
 
 function Vehicle:__init(server, data)
@@ -45,6 +46,8 @@ function get.owner(self) -- TODO: Cleanup this temporary solution
             return p
         end
     end
+
+    return OfflinePlayer(self._server, self._owner)
 end
 
 function get.livery(self)
