@@ -13,6 +13,7 @@ function JoinLog:__init(server, data)
     self._player_id = tonumber(id)
 
     self._join = data.Join
+    self._timestamp = data.Timestamp
 end
 
 function JoinLog:__tostring()
@@ -31,6 +32,10 @@ end
 
 function get.type(self)
     return self._join and enums.joinLogType.join or enums.joinLogType.leave
+end
+
+function get.timestamp(self)
+    return self._timestamp
 end
 
 return JoinLog
