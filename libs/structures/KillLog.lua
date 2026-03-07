@@ -12,6 +12,8 @@ function KillLog:__init(server, data)
     local killedName, killedID = data.Killed:match("(.+):(%d+)")
     self._killed_name = killedName
     self._killed_id = killedID and tonumber(killedID)
+
+    self._timestamp = data.Timestamp
 end
 
 function KillLog:__tostring()
@@ -36,6 +38,10 @@ function get.killed(self) -- TODO: Cleanup this temporary solution
     end
 
     return OfflinePlayer(self._server, self._killed_name, self._killed_id)
+end
+
+function get.timestamp(self)
+    return self._timestamp
 end
 
 return KillLog
