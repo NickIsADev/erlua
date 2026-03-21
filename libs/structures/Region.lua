@@ -1,4 +1,4 @@
-local Region, get = require("class")("Region")
+local Region, get = require("class")("Region", 3)
 
 function Region:__init(name, points)
     self._name = name
