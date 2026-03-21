@@ -111,6 +111,14 @@ function API:commit(method, url, headers, payload, retries)
 	local remaining = tonumber(result["x-ratelimit-remaining"])
 	local reset = tonumber(result["x-ratelimit-reset"])
 
+	if bucket:sub(1, 7) ~= "command" then
+		self._ratelimits = self._ratelimits or {}
+		self._ratelimits.global = {
+			remaining = remaining,
+			reset = reset
+		}
+	end
+
 	if remaining == 0 and reset then
 		delay = math.max(((reset - os.time()) + 1) * 1000, 0)
 	end
