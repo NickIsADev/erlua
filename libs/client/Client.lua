@@ -1,3 +1,4 @@
+local openssl = require("openssl")
 local enums = require("enums")
 
 local API = require("rest/API")
@@ -8,6 +9,7 @@ local Player = require("structures/Player")
 
 local Client = require("class")("Client", nil, Emitter)
 
+local PRC_PUBLIC_KEY = "MCowBQYDK2VwAyEAjSICb9pp0kHizGQtdG8ySWsDChfGqi+gyFCttigBNOA="
 local defaultOptions = {
     globalKey = nil,
     logLevel = enums.logLevel.info,
@@ -43,6 +45,15 @@ for name, level in pairs(enums.logLevel) do
 	end
 end
 
+function Client:_verifySignature(body, signature, timestamp)
+    local pubkey = openssl.pkey.read(openssl.base64(PRC_PUBLIC_KEY, false), false, "der")
+    local sig = signature:gsub("%x%x", function(h)
+        return string.char(tonumber(h, 16))
+    end)
+
+    return pubkey:verify(sig, timestamp .. body, "ed25519")
+end
+
 function Client:getServer(key)
     local id = key:match("%-(.+)")
 
@@ -56,6 +67,23 @@ function Client:getServer(key)
     end
 
     return self._servers[id]
+end
+
+function Client:handleWebhook(body, signature, timestamp)
+    if not self:_verifySignature(body, signature, timestamp) then
+        return {
+            code = 401,
+            message = "The signature could not be validated."
+        }
+    end
+
+    body = json.decode(body)
+    self:emit("data", body)
+
+    return {
+        code = 200,
+        message = "The webhook event has been received and processed."
+    }
 end
 
 return Client
