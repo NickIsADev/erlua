@@ -1,6 +1,6 @@
 return {
     name = "NickIsADev/erlua",
-    version = "3.6.4b-dev",
+    version = "3.6.5-dev",
     description = "A scalable library with TTL data caching, classes, and ratelimit handling for the ERLC API v2.",
     license = "MIT",
     files = {
