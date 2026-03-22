@@ -15,7 +15,7 @@ function Region:__init(name, points)
 end
 
 function Region:contains(location)
-    local x, z = location._x, location._z
+    local x, z = location.x, location.z
     local inside = false
     local n = #self._points
     local j = n
