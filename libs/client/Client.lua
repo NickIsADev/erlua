@@ -51,7 +51,7 @@ function Client:_verifySignature(body, signature, timestamp)
         return string.char(tonumber(h, 16))
     end)
 
-    return pubkey:verify(sig, timestamp .. body, "ed25519")
+    return pubkey:verify(sig, timestamp .. body)
 end
 
 function Client:getServer(key)
