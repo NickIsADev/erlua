@@ -10,6 +10,7 @@ return {
         "creationix/coro-http",
         "luvit/json",
         "luvit/timer",
+        "luvit/lua-openssl@0.8.5",
         "luvit/secure-socket"
     }
 }
