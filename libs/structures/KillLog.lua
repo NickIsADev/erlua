@@ -18,24 +18,12 @@ function KillLog:__tostring()
     return string.format("KillLog: %s (%d) killed %s (%d)", self._killer_name, self._killer_id, self._killed_name, self._killed_id)
 end
 
-function get.killer(self) -- TODO: Cleanup this temporary solution
-    for _, p in pairs(self._server.players) do
-        if p.name == self._killer_name then
-            return p
-        end
-    end
-    
-    return OfflinePlayer(self._server, self._killer_name, self._killer_id)
+function get.killer(self) 
+    return self._server:getPlayer(self._killer_id) or OfflinePlayer(self._server, self._killer_name, self._killer_id)
 end
 
-function get.killed(self) -- TODO: Cleanup this temporary solution
-    for _, p in pairs(self._server.players) do
-        if p.name == self._killed_name then
-            return p
-        end
-    end
-
-    return OfflinePlayer(self._server, self._killed_name, self._killed_id)
+function get.killed(self)
+    return self._server:getPlayer(self._killed_id) or OfflinePlayer(self._server, self._killed_name, self._killed_id)
 end
 
 return KillLog

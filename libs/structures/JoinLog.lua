@@ -19,14 +19,8 @@ function JoinLog:__tostring()
     return string.format("JoinLog: %s (%d) %s the server", self._player_name, self._player_id, self._join and "joined" or "left")
 end
 
-function get.player(self) -- TODO: Cleanup this temporary solution
-    for _, p in pairs(self._server.players) do
-        if p.name == self._player_name then
-            return p
-        end
-    end
-
-    return OfflinePlayer(self._server, self._player_name, self._player_id)
+function get.player(self)
+    return self._server:getPlayer(self._player_id) or OfflinePlayer(self._server, self._player_name, self._player_id)
 end
 
 function get.type(self)

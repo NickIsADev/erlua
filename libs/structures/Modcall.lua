@@ -26,25 +26,13 @@ function get.server(self)
     return self._server
 end
 
-function get.caller(self) -- TODO: Cleanup this temporary solution
-    for _, p in pairs(self._server.players) do
-        if p.name == self._caller_name then
-            return p
-        end
-    end
-
-    return OfflinePlayer(self._server, self._caller_name, self._caller_id)
+function get.caller(self)
+    return self._server:getPlayer(self._caller_id) or OfflinePlayer(self._server, self._caller_name, self._caller_id)
 end
 
-function get.moderator(self) -- TODO: Cleanup this temporary solution
+function get.moderator(self)
     if self._moderator_name then
-        for _, p in pairs(self._server.players) do
-            if p.name == self._moderator_name then
-                return p
-            end
-        end
-
-        return OfflinePlayer(self._server, self._moderator_name, self._moderator_id)
+        return self._server:getPlayer(self._moderator_id) or OfflinePlayer(self._server, self._moderator_name, self._moderator_id)
     end
 end
 

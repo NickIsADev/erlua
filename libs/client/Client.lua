@@ -60,7 +60,7 @@ function Client:_verifySignature(body, signature, timestamp)
 end
 
 function Client:getServer(key)
-	local id = key:match("%-(.+)")
+	local id = key:match("%-(.+)") or key
 
 	if not self._servers[id] then
 		local data, err = self._api:getServer(key)
@@ -81,7 +81,22 @@ function Client:handleWebhook(body, signature, timestamp)
 	end
 
 	body = json.decode(body)
-	self:emit("data", body)
+	if not body then
+		return false, 401, "The body could not be decoded."
+	end
+
+	local server = body.server ~= "global" and self:getServer(body.server)
+	for _, event in pairs(body.events) do
+		if event.event == "WebhookProbe" then
+			self:emit("probe")
+		elseif event.event == "CustomCommand" then
+			local player = server:getPlayer(tonumber(event.origin))
+			local command = event.command
+			local args = event.argument ~= "" and string.split(event.argument, " ")
+
+			self:emit("command", player, command, args)
+		end
+	end
 
 	return true, 200, "The webhook event has been received and processed."
 end

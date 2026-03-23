@@ -16,14 +16,8 @@ function CommandLog:__tostring()
     return string.format("CommandLog: %s (%d) used %s", self._player_name, self._player_id, self._command)
 end
 
-function get.player(self) -- TODO: Cleanup this temporary solution
-    for _, p in pairs(self._server.players) do
-        if p.name == self._player_name then
-            return p
-        end
-    end
-
-    return OfflinePlayer(self._server, self._player_name, self._player_id)
+function get.player(self)
+    return self._server:getPlayer(self._player_id) or OfflinePlayer(self._server, self._player_name, self._player_id)
 end
 
 function get.command(self)

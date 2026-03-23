@@ -40,20 +40,8 @@ function get.year(self)
     return self._year
 end
 
-function get.owner(self) -- TODO: Cleanup this temporary solution
-    for _, p in pairs(self._server.players) do
-        if p.name == self._owner then
-            return p
-        end
-    end
-
-    for _, l in pairs(self._server.joinLogs) do
-        if l.player.name == self._owner then
-            return l.player
-        end
-    end
-
-    return OfflinePlayer(self._server, self._owner)
+function get.owner(self)
+    return self._server:getPlayer(self._owner, true) or OfflinePlayer(self._server, self._owner)
 end
 
 function get.livery(self)

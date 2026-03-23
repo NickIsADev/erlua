@@ -4,7 +4,6 @@ return {
 	Server = require("structures/Server"),
 	Location = require("structures/Location"),
 	Region = require("structures/Region"),
-	regions = require("regions"),
 	enums = require("enums"),
 	package = require("./package")
 }

@@ -5,6 +5,7 @@ local KillLog = require("structures/KillLog")
 local JoinLog = require("structures/JoinLog")
 local CommandLog = require("structures/CommandLog")
 local Modcall = require("structures/Modcall")
+local OfflinePlayer = require("structures/OfflinePlayer")
 
 local function realtime()
     local seconds, microseconds = uv.gettimeofday()
@@ -131,6 +132,22 @@ end
 function Server:execute(command)
 	command = ":" .. command:gsub("^:", "")
     return self._client._api:sendServerCommand(self._server_key, { command = command })
+end
+
+function Server:getPlayer(query, offline)
+    for _, p in pairs(self.players) do
+        if p.name == query or p.id == query then
+            return p
+        end
+    end
+
+    if offline then
+        for _, l in pairs(self._server.joinLogs) do
+            if l.player.name == query or l.player.id == query then
+                return l.player
+            end
+        end
+    end
 end
 
 function Server:raw()
