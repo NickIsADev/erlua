@@ -11,31 +11,31 @@ local Client = require("class")("Client", nil, Emitter)
 
 local PRC_PUBLIC_KEY = "MCowBQYDK2VwAyEAjSICb9pp0kHizGQtdG8ySWsDChfGqi+gyFCttigBNOA="
 local defaultOptions = {
-    globalKey = nil,
-    logLevel = enums.logLevel.info,
-    dateTime = "%F %T",
-    apiVersion = 2,
-    ttl = 5
+	globalKey = nil,
+	logLevel = enums.logLevel.info,
+	dateTime = "%F %T",
+	apiVersion = 2,
+	ttl = 5
 }
 
 function Client:__init(options)
-    Emitter.__init(self)
+	Emitter.__init(self)
 
-    options = options or {}
-    for k, v in pairs(defaultOptions) do
-        if options[k] == nil then
-            options[k] = v
-        end
-    end
+	options = options or {}
+	for k, v in pairs(defaultOptions) do
+		if options[k] == nil then
+			options[k] = v
+		end
+	end
 
-    self._options = options
-    self._api = API(self, options.apiVersion)
-    self._logger = Logger(options.logLevel, options.dateTime)
-    self._servers = {}
-    
-    if options.globalKey then
-        self._api:authenticate(options.globalKey)
-    end
+	self._options = options
+	self._api = API(self, options.apiVersion)
+	self._logger = Logger(options.logLevel, options.dateTime)
+	self._servers = {}
+
+	if options.globalKey then
+		self._api:authenticate(options.globalKey)
+	end
 end
 
 for name, level in pairs(enums.logLevel) do
@@ -46,44 +46,44 @@ for name, level in pairs(enums.logLevel) do
 end
 
 function Client:_verifySignature(body, signature, timestamp)
-    local pubkey = openssl.pkey.read(openssl.base64(PRC_PUBLIC_KEY, false), false, "der")
-    local sig = signature:gsub("%x%x", function(h)
-        return string.char(tonumber(h, 16))
-    end)
+	local pubkey = openssl.pkey.read(openssl.base64(PRC_PUBLIC_KEY, false), false, "der")
+	local sig = signature:gsub("%x%x", function(h)
+		return string.char(tonumber(h, 16))
+	end)
 
-    return pubkey:verify(sig, timestamp .. body)
+	return pubkey:verify(sig, timestamp .. body)
 end
 
 function Client:getServer(key)
-    local id = key:match("%-(.+)")
+	local id = key:match("%-(.+)")
 
-    if not self._servers[id] then
-        local data, err = self._api:getServer(key)
-        if data then
-            self._servers[id] = Server(self, key, data)
-        else
-            return nil, err
-        end
-    end
+	if not self._servers[id] then
+		local data, err = self._api:getServer(key)
+		if data then
+			self._servers[id] = Server(self, key, data)
+		else
+			return nil, err
+		end
+	end
 
-    return self._servers[id]
+	return self._servers[id]
 end
 
 function Client:handleWebhook(body, signature, timestamp)
-    if not self:_verifySignature(body, signature, timestamp) then
-        return {
-            code = 401,
-            message = "The signature could not be validated."
-        }
-    end
+	if not self:_verifySignature(body, signature, timestamp) then
+		return {
+			code = 401,
+			message = "The signature could not be validated."
+		}
+	end
 
-    body = json.decode(body)
-    self:emit("data", body)
+	body = json.decode(body)
+	self:emit("data", body)
 
-    return {
-        code = 200,
-        message = "The webhook event has been received and processed."
-    }
+	return {
+		code = 200,
+		message = "The webhook event has been received and processed."
+	}
 end
 
 return Client
