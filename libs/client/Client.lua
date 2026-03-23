@@ -84,12 +84,12 @@ function Client:handleWebhook(body, signature, timestamp)
 	if not body then
 		return false, 401, "The body could not be decoded."
 	end
+	
+	self:emit("raw", body)
 
 	local serverId = body.server ~= "global" and body.server
 	local server = serverId and self:getServer(serverId)
 	for _, event in pairs(body.events) do
-		self:emit("raw", event)
-
 		if event.event == "WebhookProbe" then
 			self:emit("probe")
 		elseif event.event == "CustomCommand" then
