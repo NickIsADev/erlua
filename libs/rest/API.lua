@@ -51,6 +51,8 @@ function API:request(method, endpoint, payload, key, base)
         return false, "Request cannot be made outside of a coroutine"
 	elseif not key then
 		return false, "Server key was not provided"
+	elseif not key:match("%-(.+)") then
+		return false, "Server key provided is invalid"
 	end
 
     local url = (base or self._base_url) .. endpoint

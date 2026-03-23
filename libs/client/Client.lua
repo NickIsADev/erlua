@@ -62,7 +62,7 @@ end
 function Client:getServer(key)
 	local id = key:match("%-(.+)") or key
 
-	if not self._servers[id] then
+	if key:match("%-(.+)") and not self._servers[id] then
 		local data, err = self._api:getServer(key)
 		if data then
 			self._servers[id] = Server(self, key, data)
@@ -85,16 +85,21 @@ function Client:handleWebhook(body, signature, timestamp)
 		return false, 401, "The body could not be decoded."
 	end
 
-	local server = body.server ~= "global" and self:getServer(body.server)
+	local serverId = body.server ~= "global" and body.server
+	local server = serverId and self:getServer(serverId)
 	for _, event in pairs(body.events) do
 		if event.event == "WebhookProbe" then
 			self:emit("probe")
 		elseif event.event == "CustomCommand" then
-			local player = server:getPlayer(tonumber(event.origin))
 			local command = event.command
 			local args = event.argument ~= "" and string.split(event.argument, " ")
 
-			self:emit("command", player, command, args)
+			if server then
+				local player = server:getPlayer(tonumber(event.origin))
+				self:emit("command", server, player, command, args)
+			else
+				self:emit("commandUncached", serverId, tonumber(event.origin), command, args)
+			end
 		end
 	end
 
