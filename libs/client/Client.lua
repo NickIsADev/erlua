@@ -48,8 +48,6 @@ for name, level in pairs(enums.logLevel) do
 end
 
 function Client:_verifySignature(body, signature, timestamp)
-    assert(opensslVersion >= "0.9.0", "lua-openssl 0.9.0 or higher is required for ed25519 support")
-
 	local pubkey = openssl.pkey.read(openssl.base64(PRC_PUBLIC_KEY, false), false, "der")
 
 	if #signature % 2 ~= 0 then
