@@ -48,17 +48,15 @@ for name, level in pairs(enums.logLevel) do
 end
 
 function Client:_verifySignature(body, signature, timestamp)
-	local pubkey = openssl.pkey.read(openssl.base64(PRC_PUBLIC_KEY, false), false, "der")
+	assert(opensslVersion >= "0.8.5", "lua-openssl 0.8.5 or higher is required for ed25519 support")
 
-	if #signature % 2 ~= 0 then
-		signature = "0" .. signature
-	end
-
+	local key = openssl.pkey.read(openssl.base64(PRC_PUBLIC_KEY, false), false)
+	local digest = openssl.digest.verifyInit(nil, key)
 	local sig = signature:gsub("%x%x", function(h)
 		return string.char(tonumber(h, 16))
 	end)
 
-	return not not pubkey:verify(sig, timestamp .. body, "ed25519")
+	return digest:verify(sig, timestamp .. body)
 end
 
 function Client:getServer(key)
@@ -77,20 +75,15 @@ function Client:getServer(key)
 end
 
 function Client:handleWebhook(body, signature, timestamp)
-	if not self:_verifySignature(body, signature, timestamp) then
-		return {
-			code = 401,
-			message = "The signature could not be validated."
-		}
+	local verified, err = self:_verifySignature(body, signature, timestamp)
+	if not verified then
+		return false, 401, "The signature could not be validated: " .. (err or "unknown")
 	end
 
 	body = json.decode(body)
 	self:emit("data", body)
 
-	return {
-		code = 200,
-		message = "The webhook event has been received and processed."
-	}
+	return true, 200, "The webhook event has been received and processed."
 end
 
 return Client
