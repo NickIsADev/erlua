@@ -94,7 +94,7 @@ function Client:handleWebhook(body, signature, timestamp)
 			self:emit("probe")
 		elseif event.event == "CustomCommand" then
 			local command = event.data.command
-			local args = event.data.argument ~= "" and string.split(event.argument, " ")
+			local args = event.data.argument ~= "" and string.split(event.argument, " ") or {}
 
 			if server then
 				local player = server:getPlayer(tonumber(event.origin))
