@@ -147,7 +147,7 @@ function Server:getPlayer(query, offline)
     end
 
     if offline then
-        for _, l in pairs(self._server.joinLogs) do
+        for _, l in pairs(self.joinLogs) do
             if l.player.name == query or l.player.id == query then
                 return l.player
             end
