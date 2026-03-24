@@ -27,17 +27,8 @@ function get.team(self)
     return self._team
 end
 
-function get.players(self)
-    local players = {}
-
-    for _, id in pairs(self._players) do
-        local player = server:getPlayer(id, true)
-        if player then
-            table.insert(players, player)
-        end
-    end
-
-    return players
+function get.responders(self)
+    return self._players
 end
 
 function get.description(self)
