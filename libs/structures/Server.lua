@@ -248,7 +248,7 @@ function Server:raw()
 
     for _, v in pairs(self.emergencyCalls) do
         local rawPlayers = {}
-        for _, p in pairs(v.players) do
+        for _, p in pairs(v.responders) do
             table.insert(rawPlayers, rawPlayer(p))
         end
 
@@ -262,7 +262,7 @@ function Server:raw()
                 z = v.position.z
             },
             positionDescriptor = v.positionDescriptor,
-            players = rawPlayers,
+            responders = rawPlayers,
             timestamp = v.timestamp,
         })
     end
