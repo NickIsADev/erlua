@@ -36,7 +36,7 @@ function get.description(self)
 end
 
 function get.caller(self)
-    return self._server:getPlayer(self._caller, true) or OfflinePlayer(self._server, nil, self._caller)
+    return self._caller and (self._server:getPlayer(self._caller, true) or OfflinePlayer(self._server, nil, self._caller))
 end
 
 function get.number(self)
