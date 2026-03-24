@@ -28,6 +28,7 @@ function API:__init(client, apiVersion)
 	self._api_version = apiVersion or 2
 	self._base_url = "https://api.policeroleplay.community/v" .. self._api_version
     self._global = Mutex()
+	self._ratelimits = {}
     self._buckets = setmetatable({}, {
 		__mode = "v",
 		__index = function(self, k)
@@ -114,7 +115,6 @@ function API:commit(method, url, headers, payload, retries)
 	local reset = tonumber(result["x-ratelimit-reset"])
 
 	if bucket:sub(1, 7) ~= "command" then
-		self._ratelimits = self._ratelimits or {}
 		self._ratelimits.global = {
 			remaining = remaining,
 			reset = reset
@@ -159,7 +159,7 @@ function API:commit(method, url, headers, payload, retries)
 end
 
 function API:getServer(key)
-	local endpoint = string.format(endpoints.SERVER) .. ((self._api_version > 1 and "?Players=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true") or "")
+	local endpoint = string.format(endpoints.SERVER) .. ((self._api_version > 1 and "?Players=true&Vehicles=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&EmergencyCalls=true") or "")
 	return self:request("GET", endpoint, nil, key)
 end
 
@@ -188,7 +188,7 @@ function API:getServerCommandLogs(key)
 	return self:request("GET", endpoint, nil, key)
 end
 
-function API:getServerModcalls(key)
+function API:getServerModCalls(key)
 	local endpoint = string.format(endpoints.SERVER_MODCALLS)
 	return self:request("GET", endpoint, nil, key)
 end
@@ -210,7 +210,7 @@ end
 
 function API:sendServerCommand(key, payload)
 	local endpoint = string.format(endpoints.SERVER_COMMAND)
-	return self:request("POST", endpoint, payload, key, "https://api.policeroleplay.community/v1")
+	return self:request("POST", endpoint, payload, key)
 end
 
 return API

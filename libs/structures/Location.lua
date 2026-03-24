@@ -4,9 +4,9 @@ function Location:__init(data, parent)
     self._parent = parent
     self._x = data.LocationX
     self._z = data.LocationZ
-    self._postal_code = data.PostalCode
-    self._street_name = data.StreetName
-    self._building_number = data.BuildingNumber
+    self._postal_code = data.PostalCode or 0
+    self._street_name = data.StreetName or "Unknown Street"
+    self._building_number = data.BuildingNumber or 0
 end
 
 function Location:__tostring()
@@ -14,8 +14,8 @@ function Location:__tostring()
 end
 
 function Location:distance(other)
-    local dx = self._x - other._x
-    local dz = self._z - other._z
+    local dx = self.x - other.x
+    local dz = self.z - other.z
     return math.sqrt(dx * dx + dz * dz)
 end
 

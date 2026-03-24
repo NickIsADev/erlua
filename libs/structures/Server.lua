@@ -4,7 +4,8 @@ local Vehicle = require("structures/Vehicle")
 local KillLog = require("structures/KillLog")
 local JoinLog = require("structures/JoinLog")
 local CommandLog = require("structures/CommandLog")
-local Modcall = require("structures/Modcall")
+local ModCall = require("structures/ModCall")
+local EmergencyCall = require("structures/EmergencyCall")
 local OfflinePlayer = require("structures/OfflinePlayer")
 
 local function realtime()
@@ -35,21 +36,14 @@ function Server:_load(data)
     self._co_owner_ids = data.CoOwnerIds
     self._current_players = data.CurrentPlayers -- unreliable
     self._max_players = data.MaxPlayers
+
     local players = {}
     local vehicles = {}
     local kill_logs = {}
     local join_logs = {}
     local command_logs = {}
-    local modcalls = {}
-    
-    -- data.Players = data.Players or self._client._api:getServerPlayers(self._server_key)
-    -- data.JoinLogs = data.JoinLogs or self._client._api:getServerJoinLogs(self._server_key)
-    -- data.Vehicles = data.Vehicles or self._client._api:getServerVehicles(self._server_key)
-    -- data.KillLogs = data.KillLogs or self._client._api:getServerKillLogs(self._server_key)
-    -- data.CommandLogs = data.CommandLogs or self._client._api:getServerCommandLogs(self._server_key)
-    -- data.ModCalls = data.ModCalls or self._client._api:getServerModcalls(self._server_key)
-    -- data.Queue = data.Queue or self._client._api:getServerQueue(self._server_key)
-    -- data.Staff = data.Staff or self._client._api:getServerStaff(self._server_key)
+    local mod_calls = {}
+    local emergency_calls = {}
 
     if data.Players then
         for _, p in pairs(data.Players) do
@@ -99,7 +93,17 @@ function Server:_load(data)
         end)
 
         for _, v in pairs(data.ModCalls) do
-            table.insert(modcalls, Modcall(self, v))
+            table.insert(mod_calls, ModCall(self, v))
+        end
+    end
+
+    if data.EmergencyCalls then
+        table.sort(data.EmergencyCalls, function(a, b)
+            return a.StartedAt < b.StartedAt
+        end)
+
+        for _, v in pairs(data.EmergencyCalls) do
+            table.insert(emergency_calls, EmergencyCall(self, v))
         end
     end
 
@@ -116,7 +120,8 @@ function Server:_load(data)
     self._kill_logs = kill_logs
     self._join_logs = join_logs
     self._command_logs = command_logs
-    self._modcalls = modcalls
+    self._mod_calls = mod_calls
+    self._emergency_calls = emergency_calls
     self._last_updated = realtime()
 end
 
@@ -187,7 +192,8 @@ function Server:raw()
         killLogs = {},
         joinLogs = {},
         commandLogs = {},
-        modcalls = {},
+        modCalls = {},
+        emergencyCalls = {}
     }
 
     for _, v in pairs(self.players) do
@@ -201,6 +207,7 @@ function Server:raw()
             model = v.model,
             year = v.year,
             owner = rawPlayer(v.owner),
+            plate = v.plate,
             livery = v.livery,
             color = v.color,
             colorHex = v.colorHex,
@@ -231,10 +238,31 @@ function Server:raw()
         })
     end
 
-    for _, v in pairs(self.modcalls) do
-        table.insert(raw.modcalls, {
+    for _, v in pairs(self.modCalls) do
+        table.insert(raw.modCalls, {
             caller = rawPlayer(v.caller),
             moderator = v.moderator and rawPlayer(v.moderator),
+            timestamp = v.timestamp,
+        })
+    end
+
+    for _, v in pairs(self.emergencyCalls) do
+        local rawPlayers = {}
+        for _, p in pairs(v.players) do
+            table.insert(rawPlayers, rawPlayer(p))
+        end
+
+        table.insert(raw.emergencyCalls, {
+            team = v.team,
+            caller = v.caller and rawPlayer(v.caller),
+            description = v.description,
+            number = v.number,
+            position = v.position and {
+                x = v.position.x,
+                z = v.position.z
+            },
+            positionDescriptor = v.positionDescriptor,
+            players = rawPlayers,
             timestamp = v.timestamp,
         })
     end
@@ -318,12 +346,20 @@ function get.commandLogs(self)
     return self._command_logs
 end
 
-function get.modcalls(self)
+function get.modCalls(self)
     if (realtime() - self._last_updated) > self._ttl then
         self:refresh()
     end
 
-    return self._modcalls
+    return self._mod_calls
+end
+
+function get.emergencyCalls(self)
+    if (realtime() - self._last_updated) > self._ttl then
+        self:refresh()
+    end
+
+    return self._emergency_calls
 end
 
 function get.queue(self)

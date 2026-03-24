@@ -11,6 +11,7 @@ function Vehicle:__init(server, data)
     self._year = tonumber(year)
     
     self._owner = data.Owner
+    self._plate = data.Plate
     self._texture = data.Texture
     self._color_hex = data.ColorHex
     self._color_name = data.ColorName
@@ -42,6 +43,10 @@ end
 
 function get.owner(self)
     return self._server:getPlayer(self._owner, true) or OfflinePlayer(self._server, self._owner)
+end
+
+function get.plate(self)
+    return self._plate
 end
 
 function get.livery(self)

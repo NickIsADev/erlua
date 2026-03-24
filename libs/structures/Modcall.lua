@@ -1,8 +1,7 @@
-local Location = require("structures/Location")
 local OfflinePlayer = require("structures/OfflinePlayer")
-local Modcall, get = require("class")("Modcall")
+local ModCall, get = require("class")("ModCall")
 
-function Modcall:__init(server, data)
+function ModCall:__init(server, data)
     self._server = server
 
     local callerName, callerID = data.Caller:match("(.+):(%d+)")
@@ -18,8 +17,8 @@ function Modcall:__init(server, data)
     self._timestamp = data.Timestamp
 end
 
-function Modcall:__tostring()
-    return string.format("Modcall: %s", self._caller_name)
+function ModCall:__tostring()
+    return string.format("ModCall: %s", self._caller_name)
 end
 
 function get.server(self)
@@ -40,4 +39,4 @@ function get.timestamp(self)
     return self._timestamp
 end
 
-return Modcall
+return ModCall
