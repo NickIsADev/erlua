@@ -110,9 +110,9 @@ function API:commit(method, url, headers, payload, retries)
 		result[i] = nil
 	end
 
-	local bucket = result["x-ratelimit-bucket"]
-	local remaining = tonumber(result["x-ratelimit-remaining"])
-	local reset = tonumber(result["x-ratelimit-reset"])
+	local bucket = result["x-ratelimit-bucket"] or "global"
+	local remaining = tonumber(result["x-ratelimit-remaining"]) or 35
+	local reset = tonumber(result["x-ratelimit-reset"]) or os.time() + 3
 
 	if bucket:sub(1, 7) ~= "command" then
 		self._ratelimits.global = {
