@@ -24,96 +24,106 @@ end
 local API = require("class")("API")
 
 function API:__init(client, apiVersion)
-    self._client = client
+	self._client = client
 	self._api_version = apiVersion or 2
 	self._base_url = "https://api.policeroleplay.community/v" .. self._api_version
-    self._global = Mutex()
-	self._ratelimits = {}
-    self._buckets = setmetatable({}, {
-		__mode = "v",
-		__index = function(self, k)
-			self[k] = Mutex()
-			return self[k]
-		end
-	})
+	self._buckets = setmetatable({}, { __mode = "v" })
+end
+
+function API:_getBucket(name)
+	if not self._buckets[name] then
+		local limit = name:sub(1, 7) == "command" and 1 or 35
+		self._buckets[name] = {
+			mutex = Mutex(),
+			remaining = limit,
+			limit = limit,
+			reset = 0,
+		}
+	end
+	return self._buckets[name]
 end
 
 function API:authenticate(globalKey)
 	if self._client then
 		self._client:info("Authenticated with global key")
 	end
-    self._global_key = globalKey
-    return true
+	self._global_key = globalKey
+	return true
 end
 
 function API:request(method, endpoint, payload, key, base)
-    local _, main = coroutine.running()
-    if main then
-        return false, "Request cannot be made outside of a coroutine"
+	local _, main = coroutine.running()
+	if main then
+		return false, "Request cannot be made outside of a coroutine"
 	elseif not key then
 		return false, "Server key was not provided"
 	elseif not key:match("%-(.+)") then
 		return false, "Server key provided is invalid"
 	end
 
-    local url = (base or self._base_url) .. endpoint
-    local headers = {
-        {"User-Agent", USER_AGENT},
-        {"Server-Key", key}
-    }
+	local url = (base or self._base_url) .. endpoint
+	local headers = {
+		{ "User-Agent", USER_AGENT },
+		{ "Server-Key", key },
+	}
 
-    if self._global_key then
-        table.insert(headers, {"Authorization", self._global_key})
-    end
+	if self._global_key then
+		table.insert(headers, { "Authorization", self._global_key })
+	end
 
-    if payloadRequired[method] then
-        payload = payload and json.encode(payload) or "{}"
-        table.insert(headers, {"Content-Type", JSON})
-        table.insert(headers, {"Content-Length", #payload})
-    end
+	if payloadRequired[method] then
+		payload = payload and json.encode(payload) or "{}"
+		table.insert(headers, { "Content-Type", JSON })
+		table.insert(headers, { "Content-Length", #payload })
+	end
 
-    local global = self._global
-    local server = method == "POST" and endpoint == endpoints.SERVER_COMMAND and self._buckets["command-" .. key]
+	local bucketName = (method == "POST" and endpoint == endpoints.SERVER_COMMAND) and ("command-" .. key) or "global"
+	local bucket = self:_getBucket(bucketName)
 
-    if server then
-        server:lock()
-	else
-		global:lock()
-    end
+	bucket.mutex:lock()
 
-	local data, err, delay = self:commit(method, url, headers, payload, 0)
-    if server then
-        if delay > 0 then
-			server:unlockAfter(delay)
-		else
-			server:unlock()
+	local now = realtime()
+	if bucket.remaining <= 0 and bucket.reset > now then
+		local delay = (bucket.reset - now) * 1000
+		if self._client then
+			self._client:info("Bucket %s is ratelimited; waiting %.2fms", bucketName, delay)
 		end
-	else
-		if delay > 0 then
-			if self._client then
-				self._client:info("Global bucket is unlocking after " .. delay .. "ms...")
-			end
-			global:unlockAfter(delay)
-		else
-			global:unlock()
-		end
-    end
+		timer.sleep(delay)
+	end
 
-    return data, err
+	local lockHeld = true
+	bucket.remaining = bucket.remaining - 1
+	if bucket.remaining > 0 then
+		bucket.mutex:unlock()
+		lockHeld = false
+	end
+
+	local data, err, resHeaders = self:commit(method, url, headers, payload, 0)
+
+	if resHeaders then
+		bucket.remaining = tonumber(resHeaders["x-ratelimit-remaining"]) or bucket.remaining
+		bucket.limit = tonumber(resHeaders["x-ratelimit-limit"]) or bucket.limit
+		bucket.reset = tonumber(resHeaders["x-ratelimit-reset"]) or bucket.reset
+	end
+
+	if lockHeld then
+		bucket.mutex:unlock()
+	end
+
+	return data, err
 end
 
-function API:commit(method, url, headers, payload, retries)
-	local delay = 0
 
+function API:commit(method, url, headers, payload, retries)
 	if self._client then
 		self._client:debug("%s %s", method, url)
 	end
 	local success, result, body = pcall(http.request, method, url, headers, payload)
 	if self._client then
-		self._client:debug("%d %s", result.code or 0, result.reason or "Unknown")
+		self._client:debug("%d %s", result and result.code or 0, result and result.reason or "Unknown")
 	end
 	if not success then
-		return false, result, delay
+		return false, result
 	end
 
 	for i, v in ipairs(result) do
@@ -121,36 +131,26 @@ function API:commit(method, url, headers, payload, retries)
 		result[i] = nil
 	end
 
-	local bucket = result["x-ratelimit-bucket"] or "global"
-	local remaining = tonumber(result["x-ratelimit-remaining"]) or 35
-	local reset = tonumber(result["x-ratelimit-reset"]) or os.time() + 3
-
-	if bucket:sub(1, 7) ~= "command" then
-		self._ratelimits.global = {
-			remaining = remaining,
-			reset = reset
-		}
-	end
-
-	if remaining == 0 and reset then
-		delay = math.max(((reset - os.time()) + 1) * 1000, 0)
-	end
-
-	local data = result["content-type"]:sub(1, #JSON) == JSON and json.decode(body, 1, json.null) or body
+	local data = (result["content-type"] and result["content-type"]:sub(1, #JSON) == JSON)
+			and json.decode(body, 1, json.null)
+		or body
 
 	local retry = false
+	local delay = 0
 	if result.code < 300 then
-		return data, nil, delay
+		return data, nil, result
 	elseif result.code == 429 and type(data) == "table" and data.retry_after and data.retry_after ~= json.null then
 		delay = data.retry_after * 1000
 		retry = retries < 2
 	elseif result.code == 502 then
-		delay = delay + math.random(0, 2000)
+		delay = math.random(0, 2000)
 		retry = retries < 2
 	end
 
 	if retry then
-		if delay > 0 then timer.sleep(delay) end
+		if delay > 0 then
+			timer.sleep(delay)
+		end
 		return self:commit(method, url, headers, payload, retries + 1)
 	end
 
@@ -166,7 +166,7 @@ function API:commit(method, url, headers, payload, retries)
 		client:error(err)
 	end
 
-	return false, err, delay
+	return false, err, result
 end
 
 function API:getServer(key)
