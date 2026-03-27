@@ -20,6 +20,7 @@ function Server:__init(client, serverKey, data)
     self._server_key = serverKey
     self._id = serverKey:match("%-(.+)")
     self._ttl = client._options.ttl
+    self._refreshing = true
     self:_load(data)
 end
 
@@ -123,13 +124,18 @@ function Server:_load(data)
     self._mod_calls = mod_calls
     self._emergency_calls = emergency_calls
     self._last_updated = realtime()
+    self._refreshing = false
 end
 
 function Server:refresh()
+    if self._refreshing then return false, "Server is already refreshing" end
+
+    self._refreshing = true
     local data, err = self._client._api:getServer(self._server_key)
     if data then
         return self:_load(data)
     else
+        self._refreshing = false
         return false, err
     end
 end

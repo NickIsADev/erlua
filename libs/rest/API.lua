@@ -72,16 +72,20 @@ function API:request(method, endpoint, payload, key, base)
         table.insert(headers, {"Content-Length", #payload})
     end
 
-    local global = self._global
+    -- local global = self._global
     local server = method == "POST" and endpoint == endpoints.SERVER_COMMAND and self._buckets["command-" .. key]
 
     if server then
         server:lock()
+	-- else
+	-- 	global:lock()
     end
 
 	local data, err, delay = self:commit(method, url, headers, payload, 0)
     if server then
         server:unlockAfter(delay)
+	-- else
+	-- 	global:unlockAfter(delay)
     end
 
     return data, err
