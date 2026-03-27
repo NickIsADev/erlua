@@ -90,6 +90,9 @@ function API:request(method, endpoint, payload, key, base)
 		end
 	else
 		if delay > 0 then
+			if self._client then
+				self._client:info("Global bucket is unlocking after " .. delay .. "ms...")
+			end
 			global:unlockAfter(delay)
 		else
 			global:unlock()
