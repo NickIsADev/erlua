@@ -31,7 +31,7 @@ function default:__tostring()
 end
 
 local pruner = uv.new_timer()
-uv.timer_start(pruner, 1000, 1000, function()
+uv.timer_start(pruner, 10000, 10000, function()
 	local now = realtime()
 	for _, class in pairs(names) do
 		if class.__ttl then

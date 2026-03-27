@@ -36,6 +36,7 @@ function Client:__init(options)
 	self._servers = {}
 
 	if options.globalKey then
+		options.ttl = math.max(options.ttl, 15)
 		self._api:authenticate(options.globalKey)
 	end
 end
