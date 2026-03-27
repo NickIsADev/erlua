@@ -83,9 +83,17 @@ function API:request(method, endpoint, payload, key, base)
 
 	local data, err, delay = self:commit(method, url, headers, payload, 0)
     if server then
-        server:unlockAfter(delay)
+        if delay > 0 then
+			server:unlockAfter(delay)
+		else
+			server:unlock()
+		end
 	else
-		global:unlockAfter(delay)
+		if delay > 0 then
+			global:unlockAfter(delay)
+		else
+			global:unlock()
+		end
     end
 
     return data, err
