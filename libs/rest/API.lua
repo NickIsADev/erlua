@@ -27,7 +27,7 @@ function API:__init(client, apiVersion)
 	self._client = client
 	self._api_version = apiVersion or 2
 	self._base_url = "https://api.policeroleplay.community/v" .. self._api_version
-	self._buckets = setmetatable({}, { __mode = "v" })
+	self._buckets = {}
 end
 
 function API:_getBucket(name)
@@ -162,7 +162,7 @@ function API:commit(method, url, headers, payload, retries)
 	end
 
 	local client = self._client
-	if client then
+	if client and (not client._options or not client._options.ignoredErrorCodes or not client._options.ignoredErrorCodes[tostring(data.code or 0)]) then
 		client:error(err)
 	end
 
