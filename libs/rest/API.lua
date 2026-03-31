@@ -10,7 +10,7 @@ local package = require("../../package.lua")
 local JSON = "application/json"
 local USER_AGENT = "ERLua (https://github.com/NickIsADev/erlua, " .. package.version .. ")"
 
-local payloadRequired = {POST = true, PATCH = true, PUT = true}
+local payloadRequired = { POST = true, PATCH = true, PUT = true }
 
 local function urlencode(obj)
 	return (string.gsub(tostring(obj), "%W", tohex))
@@ -24,12 +24,12 @@ end
 local API = require("class")("API")
 
 function API:__init(client, apiVersion)
-    self._client = client
+	self._client = client
 	self._api_version = apiVersion or 2
 	self._base_url = "https://api.policeroleplay.community/v" .. self._api_version
-    self._global = Mutex()
+	self._global = Mutex()
 	self._ratelimits = {}
-    self._buckets = setmetatable({}, {
+	self._buckets = setmetatable({}, {
 		__mode = "v",
 		__index = function(self, k)
 			self[k] = Mutex()
@@ -42,48 +42,48 @@ function API:authenticate(globalKey)
 	if self._client then
 		self._client:info("Authenticated with global key")
 	end
-    self._global_key = globalKey
-    return true
+	self._global_key = globalKey
+	return true
 end
 
 function API:request(method, endpoint, payload, key, base)
-    local _, main = coroutine.running()
-    if main then
-        return false, "Request cannot be made outside of a coroutine"
+	local _, main = coroutine.running()
+	if main then
+		return false, "Request cannot be made outside of a coroutine"
 	elseif not key then
 		return false, "Server key was not provided"
 	elseif not key:match("%-(.+)") then
 		return false, "Server key provided is invalid"
 	end
 
-    local url = (base or self._base_url) .. endpoint
-    local headers = {
-        {"User-Agent", USER_AGENT},
-        {"Server-Key", key}
-    }
+	local url = (base or self._base_url) .. endpoint
+	local headers = {
+		{ "User-Agent", USER_AGENT },
+		{ "Server-Key", key }
+	}
 
-    if self._global_key then
-        table.insert(headers, {"Authorization", self._global_key})
-    end
+	if self._global_key then
+		table.insert(headers, { "Authorization", self._global_key })
+	end
 
-    if payloadRequired[method] then
-        payload = payload and json.encode(payload) or "{}"
-        table.insert(headers, {"Content-Type", JSON})
-        table.insert(headers, {"Content-Length", #payload})
-    end
+	if payloadRequired[method] then
+		payload = payload and json.encode(payload) or "{}"
+		table.insert(headers, { "Content-Type", JSON })
+		table.insert(headers, { "Content-Length", #payload })
+	end
 
-    local global = self._global
-    local server = method == "POST" and endpoint == endpoints.SERVER_COMMAND and self._buckets["command-" .. key]
+	local global = self._global
+	local server = method == "POST" and endpoint == endpoints.SERVER_COMMAND and self._buckets["command-" .. key]
 
-    if server then
-        server:lock()
+	if server then
+		server:lock()
 	else
 		global:lock()
-    end
+	end
 
 	local data, err, delay = self:commit(method, url, headers, payload, 0)
-    if server then
-        if delay > 0 then
+	if server then
+		if delay > 0 then
 			server:unlockAfter(delay)
 		else
 			server:unlock()
@@ -97,9 +97,9 @@ function API:request(method, endpoint, payload, key, base)
 		else
 			global:unlock()
 		end
-    end
+	end
 
-    return data, err
+	return data, err
 end
 
 function API:commit(method, url, headers, payload, retries)
@@ -170,7 +170,8 @@ function API:commit(method, url, headers, payload, retries)
 end
 
 function API:getServer(key)
-	local endpoint = string.format(endpoints.SERVER) .. ((self._api_version > 1 and "?Players=true&Vehicles=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&EmergencyCalls=true") or "")
+	local endpoint = string.format(endpoints.SERVER) ..
+	((self._api_version > 1 and "?Players=true&Vehicles=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&EmergencyCalls=true") or "")
 	return self:request("GET", endpoint, nil, key)
 end
 
