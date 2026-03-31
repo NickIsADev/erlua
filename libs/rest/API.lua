@@ -3,7 +3,6 @@ local timer = require("timer")
 local uv = require("uv")
 local http = require("coro-http")
 local endpoints = require("rest/endpoints")
-local Logger = require("utils/Logger")
 local Mutex = require("utils/Mutex")
 local package = require("../../package.lua")
 
@@ -27,12 +26,17 @@ function API:__init(client, apiVersion)
 	self._client = client
 	self._api_version = apiVersion or 2
 	self._base_url = "https://api.policeroleplay.community/v" .. self._api_version
-	self._global = Mutex()
-	self._ratelimits = {}
 	self._buckets = setmetatable({}, {
 		__mode = "v",
 		__index = function(self, k)
-			self[k] = Mutex()
+			local limit = k:sub(1, 7) == "command" and 1 or 35
+
+			self[k] = {
+				mutex = Mutex(),
+				remaining = limit,
+				limit = limit,
+				reset = 0
+			}
 			return self[k]
 		end
 	})
@@ -72,48 +76,52 @@ function API:request(method, endpoint, payload, key, base)
 		table.insert(headers, { "Content-Length", #payload })
 	end
 
-	local global = self._global
-	local server = method == "POST" and endpoint == endpoints.SERVER_COMMAND and self._buckets["command-" .. key]
+	local bucketName = method == "POST" and endpoint == endpoints.SERVER_COMMAND and "command-" .. key or "global"
+	local bucket = self._buckets[bucketName]
 
-	if server then
-		server:lock()
-	else
-		global:lock()
+	bucket.mutex:lock()
+
+	local now = realtime()
+	if bucket.remaining <= 0 and bucket.reset > now then
+		local delay = (bucket.reset - now) * 1000
+		if self._client then
+			self._client:info("Bucket %s is ratelimited; waiting %.2fms", bucketName, delay)
+		end
+		timer.sleep(delay)
 	end
 
-	local data, err, delay = self:commit(method, url, headers, payload, 0)
-	if server then
-		if delay > 0 then
-			server:unlockAfter(delay)
-		else
-			server:unlock()
-		end
-	else
-		if delay > 0 then
-			if self._client then
-				self._client:info("Global bucket is unlocking after " .. delay .. "ms...")
-			end
-			global:unlockAfter(delay)
-		else
-			global:unlock()
-		end
+	local holding = true
+	bucket.remaining = bucket.remaining - 1
+	if bucket.remaining > 0 then
+		bucket.mutex:unlock()
+		holding = false
+	end
+
+	local data, err, headers = self:commit(method, url, headers, payload, 0)
+
+	if headers then
+		bucket.remaining = tonumber(headers["x-ratelimit-remaining"]) or bucket.remaining
+		bucket.limit = tonumber(headers["x-ratelimit-limit"]) or bucket.limit
+		bucket.reset = tonumber(headers["x-ratelimit-reset"]) or bucket.reset
+	end
+
+	if holding then
+		bucket.mutex:unlock()
 	end
 
 	return data, err
 end
 
 function API:commit(method, url, headers, payload, retries)
-	local delay = 0
-
 	if self._client then
 		self._client:debug("%s %s", method, url)
 	end
 	local success, result, body = pcall(http.request, method, url, headers, payload)
 	if self._client then
-		self._client:debug("%d %s", result.code or 0, result.reason or "Unknown")
+		self._client:debug("%d %s", result and result.code or 0, result and result.reason or "Unknown")
 	end
 	if not success then
-		return false, result, delay
+		return false, result
 	end
 
 	for i, v in ipairs(result) do
@@ -121,36 +129,24 @@ function API:commit(method, url, headers, payload, retries)
 		result[i] = nil
 	end
 
-	local bucket = result["x-ratelimit-bucket"]
-	local remaining = tonumber(result["x-ratelimit-remaining"])
-	local reset = tonumber(result["x-ratelimit-reset"])
-
-	if bucket:sub(1, 7) ~= "command" then
-		self._ratelimits.global = {
-			remaining = remaining,
-			reset = reset
-		}
-	end
-
-	if remaining == 0 and reset then
-		delay = math.max(((reset - os.time()) + 1) * 1000, 0)
-	end
-
-	local data = result["content-type"]:sub(1, #JSON) == JSON and json.decode(body, 1, json.null) or body
+	local data = result["content-type"] and result["content-type"]:sub(1, #JSON) == JSON and json.decode(body, 1, json.null) or body
 
 	local retry = false
+	local delay = 0
 	if result.code < 300 then
-		return data, nil, delay
+		return data, nil, result
 	elseif result.code == 429 and type(data) == "table" and data.retry_after and data.retry_after ~= json.null then
 		delay = data.retry_after * 1000
 		retry = retries < 2
 	elseif result.code == 502 then
-		delay = delay + math.random(0, 2000)
+		delay = math.random(0, 2000)
 		retry = retries < 2
 	end
 
 	if retry then
-		if delay > 0 then timer.sleep(delay) end
+		if delay > 0 then
+			timer.sleep(delay)
+		end
 		return self:commit(method, url, headers, payload, retries + 1)
 	end
 
@@ -162,16 +158,15 @@ function API:commit(method, url, headers, payload, retries)
 	end
 
 	local client = self._client
-	if client then
+	if client and not (client._options and client._options.ignoredErrorCodes and client._options.ignoredErrorCodes[tostring(data.code or 0)]) then
 		client:error(err)
 	end
 
-	return false, err, delay
+	return false, err, result
 end
 
 function API:getServer(key)
-	local endpoint = string.format(endpoints.SERVER) ..
-	((self._api_version > 1 and "?Players=true&Vehicles=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&EmergencyCalls=true") or "")
+	local endpoint = string.format(endpoints.SERVER) .. ((self._api_version > 1 and "?Players=true&Vehicles=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&EmergencyCalls=true") or "")
 	return self:request("GET", endpoint, nil, key)
 end
 
