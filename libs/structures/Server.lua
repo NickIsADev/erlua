@@ -29,14 +29,14 @@ function Server:__tostring()
 end
 
 function Server:_load(data)
-    self._name = data.Name
-    self._join_key = data.JoinKey
-    self._account_verification_requirement = data.AccVerifiedReq
-    self._team_balance = data.TeamBalance
-    self._owner_id = data.OwnerId
-    self._co_owner_ids = data.CoOwnerIds
-    self._current_players = data.CurrentPlayers -- unreliable
-    self._max_players = data.MaxPlayers
+    self._name = self._name or data.Name
+    self._join_key = self._join_key or data.JoinKey
+    self._account_verification_requirement = self._account_verification_requirement or data.AccVerifiedReq
+    self._team_balance = self._team_balance or data.TeamBalance
+    self._owner_id = self._owner_id or data.OwnerId
+    self._co_owner_ids = self._co_owner_ids or data.CoOwnerIds
+    self._current_players = self._current_players or data.CurrentPlayers -- unreliable
+    self._max_players = self._max_players or data.MaxPlayers
 
     local players = {}
     local vehicles = {}

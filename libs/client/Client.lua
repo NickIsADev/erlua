@@ -16,6 +16,8 @@ local defaultOptions = {
 	globalKey = nil,
 	logLevel = enums.logLevel.info,
 	dateTime = "%F %T",
+	ignoredErrorCodes = {},
+	offlineEmpty = true,
 	apiVersion = 2,
 	ttl = 5
 }
@@ -65,7 +67,7 @@ function Client:getServer(key)
 
 	if key:match("%-(.+)") and not self._servers[id] then
 		local data, err = self._api:getServer(key)
-		if data then
+		if data and next(data) then
 			self._servers[id] = Server(self, key, data)
 		else
 			return nil, err

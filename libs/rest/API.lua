@@ -135,6 +135,8 @@ function API:commit(method, url, headers, payload, retries)
 	local delay = 0
 	if result.code < 300 then
 		return data, nil, result
+	elseif result.code == 422 and client and client._options and client._options.offlineEmpty then
+		return {}, nil, result
 	elseif result.code == 429 and type(data) == "table" and data.retry_after and data.retry_after ~= json.null then
 		delay = data.retry_after * 1000
 		retry = retries < 2
