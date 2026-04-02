@@ -103,6 +103,7 @@ function API:request(method, endpoint, payload, key, base)
 		bucket.remaining = tonumber(headers["x-ratelimit-remaining"]) or bucket.remaining
 		bucket.limit = tonumber(headers["x-ratelimit-limit"]) or bucket.limit
 		bucket.reset = tonumber(headers["x-ratelimit-reset"]) or bucket.reset
+		bucket.reset = bucket.reset and bucket.reset + 0.1 -- buffer
 	end
 
 	if holding then
