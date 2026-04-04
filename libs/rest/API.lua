@@ -31,7 +31,8 @@ function API:__init(client, apiVersion)
 				mutex = Mutex(),
 				remaining = limit,
 				limit = limit,
-				reset = 0
+				reset = 0,
+				in_flight = 0
 			}
 			return self[k]
 		end
@@ -88,13 +89,16 @@ function API:request(method, endpoint, payload, key, base)
 	end
 
 	local holding = true
+	bucket.in_flight = bucket.in_flight + 1
 	bucket.remaining = bucket.remaining - 1
 	if bucket.remaining > 0 then
 		bucket.mutex:unlock()
 		holding = false
 	end
 
-	local data, err, headers = self:commit(method, url, headers, payload, 0)
+	local data, err, headers = self:commit(method, url, headers, payload, 0, bucket)
+
+	bucket.in_flight = bucket.in_flight - 1
 
 	if headers then
 		local limit = tonumber(headers["x-ratelimit-limit"])
@@ -102,11 +106,12 @@ function API:request(method, endpoint, payload, key, base)
 		local reset = tonumber(headers["x-ratelimit-reset"])
 
 		if limit then bucket.limit = limit end
-		if reset then bucket.reset = reset + 0.1 end -- 100ms buffer
+		if reset then bucket.reset = reset + 0.5 end -- more buffer :mending_heart:
 
 		if remaining then
-			if remaining < bucket.remaining or bucket.remaining <= 0 then
-				bucket.remaining = remaining
+			local estimate = remaining - bucket.in_flight
+			if estimate < bucket.remaining or bucket.remaining <= 0 then
+				bucket.remaining = estimate
 			end
 		end
 	end
@@ -118,14 +123,14 @@ function API:request(method, endpoint, payload, key, base)
 	return data, err
 end
 
-function API:commit(method, url, headers, payload, retries)
+function API:commit(method, url, headers, payload, retries, bucket)
 	local client = self._client
 	if client then
-		self._client:debug("%s %s", method, url)
+		client:debug("%s %s", method, url)
 	end
 	local success, result, body = pcall(http.request, method, url, headers, payload)
-	if self._client then
-		self._client:debug("%d %s", result and result.code or 0, result and result.reason or "Unknown")
+	if client then
+		client:debug("%d %s", result and result.code or 0, result and result.reason or "Unknown")
 	end
 	if not success then
 		return false, result
@@ -145,11 +150,24 @@ function API:commit(method, url, headers, payload, retries)
 	elseif result.code == 422 and client and client._options and client._options.offlineEmpty then
 		return {}, nil, result
 	elseif result.code == 429 then
+		if bucket then
+			bucket.remaining = 0
+			local reset = tonumber(result["x-ratelimit-reset"])
+			if reset then
+				bucket.reset = reset + 0.5
+			end
+		end
+
 		if type(data) == "table" and data.retry_after and data.retry_after ~= json.null then
 			delay = data.retry_after * 1000
 		elseif result["retry-after"] then
 			delay = tonumber(result["retry-after"]) * 1000
 		end
+
+		if bucket and delay > 0 and (not bucket.reset or bucket.reset < realtime() + (delay / 1000)) then
+			bucket.reset = realtime() + (delay / 1000) + 0.5
+		end
+
 		retry = retries < 2
 	elseif result.code == 502 then
 		delay = math.random(500, 2000)
@@ -158,9 +176,9 @@ function API:commit(method, url, headers, payload, retries)
 
 	if retry then
 		if delay > 0 then
-			timer.sleep(delay)
+			timer.sleep(delay + math.random(0, 100)) -- jitter
 		end
-		return self:commit(method, url, headers, payload, retries + 1)
+		return self:commit(method, url, headers, payload, retries + 1, bucket)
 	end
 
 	local err
