@@ -119,7 +119,8 @@ function API:request(method, endpoint, payload, key, base)
 end
 
 function API:commit(method, url, headers, payload, retries)
-	if self._client then
+	local client = self._client
+	if client then
 		self._client:debug("%s %s", method, url)
 	end
 	local success, result, body = pcall(http.request, method, url, headers, payload)
@@ -141,7 +142,7 @@ function API:commit(method, url, headers, payload, retries)
 	local delay = 0
 	if result.code < 300 then
 		return data, nil, result
-	elseif result.code == 422 and self._client and self._client._options and self._client._options.offlineEmpty then
+	elseif result.code == 422 and client and client._options and client._options.offlineEmpty then
 		return {}, nil, result
 	elseif result.code == 429 then
 		if type(data) == "table" and data.retry_after and data.retry_after ~= json.null then
@@ -169,7 +170,6 @@ function API:commit(method, url, headers, payload, retries)
 		err = string.format("HTTP Error %i : %s", result.code or 0, result.reason or "Unknown")
 	end
 
-	local client = self._client
 	if client and not (client._options and client._options.ignoredErrorCodes and client._options.ignoredErrorCodes[tostring(data.code or 0)]) then
 		client:error(err)
 	end
