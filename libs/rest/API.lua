@@ -11,10 +11,6 @@ local USER_AGENT = "ERLua (https://github.com/NickIsADev/erlua, " .. package.ver
 
 local payloadRequired = { POST = true, PATCH = true, PUT = true }
 
-local function urlencode(obj)
-	return (string.gsub(tostring(obj), "%W", tohex))
-end
-
 local function realtime()
 	local seconds, microseconds = uv.gettimeofday()
 	return seconds + (microseconds / 1000000)
@@ -88,6 +84,7 @@ function API:request(method, endpoint, payload, key, base)
 			self._client:info("Bucket %s is ratelimited; waiting %.2fms", bucketName, delay)
 		end
 		timer.sleep(delay)
+		now = realtime()
 	end
 
 	local holding = true
@@ -100,10 +97,18 @@ function API:request(method, endpoint, payload, key, base)
 	local data, err, headers = self:commit(method, url, headers, payload, 0)
 
 	if headers then
-		bucket.remaining = tonumber(headers["x-ratelimit-remaining"]) or bucket.remaining
-		bucket.limit = tonumber(headers["x-ratelimit-limit"]) or bucket.limit
-		bucket.reset = tonumber(headers["x-ratelimit-reset"]) or bucket.reset
-		bucket.reset = bucket.reset and bucket.reset + 0.05 -- buffer
+		local limit = tonumber(headers["x-ratelimit-limit"])
+		local remaining = tonumber(headers["x-ratelimit-remaining"])
+		local reset = tonumber(headers["x-ratelimit-reset"])
+
+		if limit then bucket.limit = limit end
+		if reset then bucket.reset = reset + 0.1 end -- 100ms buffer
+
+		if remaining then
+			if remaining < bucket.remaining or bucket.remaining <= 0 then
+				bucket.remaining = remaining
+			end
+		end
 	end
 
 	if holding then
@@ -136,13 +141,17 @@ function API:commit(method, url, headers, payload, retries)
 	local delay = 0
 	if result.code < 300 then
 		return data, nil, result
-	elseif result.code == 422 and client and client._options and client._options.offlineEmpty then
+	elseif result.code == 422 and self._client and self._client._options and self._client._options.offlineEmpty then
 		return {}, nil, result
-	elseif result.code == 429 and type(data) == "table" and data.retry_after and data.retry_after ~= json.null then
-		delay = data.retry_after * 1000
+	elseif result.code == 429 then
+		if type(data) == "table" and data.retry_after and data.retry_after ~= json.null then
+			delay = data.retry_after * 1000
+		elseif result["retry-after"] then
+			delay = tonumber(result["retry-after"]) * 1000
+		end
 		retry = retries < 2
 	elseif result.code == 502 then
-		delay = math.random(0, 2000)
+		delay = math.random(500, 2000)
 		retry = retries < 2
 	end
 
