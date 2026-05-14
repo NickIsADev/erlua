@@ -138,7 +138,7 @@ function Server:refresh()
         self._refreshing = false
         if err:match("Invalid Server%-Key") then
             self._invalid = true
-            self._client._servers[self._id] = nil
+            self._client._servers[self._server_key] = nil
         end
         
         return false, err

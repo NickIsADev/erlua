@@ -62,29 +62,25 @@ function Client:_verifySignature(body, signature, timestamp)
 	return digest:verify(sig, timestamp .. body)
 end
 
-function Client:getServer(query)
-	local type = query:match("%-(.+)") and "key" or "id"
-	local key = type == "key" and query
-
+function Client:getServer(key)
 	if key then
-		local id = type == "id" and query or query:match("%-(.+)")
-		local cached = self._servers[id]
+		local cached = self._servers[key]
 
 		if key and cached and cached._server_key ~= key then
 			cached:refresh()
-			cached = self._servers[id]
+			cached = self._servers[key]
 		end
 
 		if key and not cached then
 			local data, err = self._api:getServer(key) -- fetch it using the key
 			if data and next(data) then
-				self._servers[id] = Server(self, key, data) -- cache it by id
+				self._servers[key] = Server(self, key, data) -- cache it by id
 			else
 				return nil, err
 			end
 		end
 
-		return self._servers[id]
+		return self._servers[key]
 	else
 		return nil, "Invalid API key provided"
 	end
